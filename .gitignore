@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.venv/
+.venv-tools/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.env
+*.log
+
+# Java / Maven build output
+target/
+dependency-reduced-pom.xml

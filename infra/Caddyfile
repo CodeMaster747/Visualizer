@@ -1,0 +1,35 @@
+# Reverse proxy + static file server for the whole app.
+#
+# Serves the SPA and proxies /api to the backend on the internal network, so the
+# browser only ever talks to one origin over HTTPS. Caddy obtains and renews the
+# TLS certificate automatically from Let's Encrypt for the configured domain.
+#
+# Set DOMAIN in the environment (e.g. visualizer.example.com). For a purely
+# local run, DOMAIN defaults to :80 and TLS is skipped.
+
+{$DOMAIN:localhost} {
+	encode gzip zstd
+
+	# API calls go to the orchestrator. The frontend uses relative /api URLs, so
+	# no CORS is involved.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# Everything else is the single-page app; unknown paths fall back to
+	# index.html so client-side routes work on refresh.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	# The backend already rate-limits expensive endpoints; these headers are
+	# defence-in-depth for the static app.
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

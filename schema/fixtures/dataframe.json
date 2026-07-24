@@ -1,0 +1,610 @@
+{
+  "version": 1,
+  "language": "python",
+  "status": "ok",
+  "source": "import pandas as pd\nimport numpy as np\n\ndf = pd.read_csv(\"/data/sales.csv\")\ntotals = df.groupby(\"region\")[\"amount\"].sum()\narr = np.array([[1, 2], [3, 4]])\nprint(totals)\n",
+  "steps": [
+    {
+      "i": 0,
+      "line": 4,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 4,
+          "locals": {
+            "pd": {
+              "ref": "m1"
+            },
+            "np": {
+              "ref": "m2"
+            }
+          },
+          "order": [
+            "pd",
+            "np"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "m1": {
+          "kind": "module",
+          "name": "pandas",
+          "repr": "<module 'pandas'>"
+        },
+        "m2": {
+          "kind": "module",
+          "name": "numpy",
+          "repr": "<module 'numpy'>"
+        }
+      }
+    },
+    {
+      "i": 1,
+      "line": 5,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 5,
+          "locals": {
+            "pd": {
+              "ref": "m1"
+            },
+            "np": {
+              "ref": "m2"
+            },
+            "df": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "pd",
+            "np",
+            "df"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "m1": {
+          "kind": "module",
+          "name": "pandas",
+          "repr": "<module 'pandas'>"
+        },
+        "m2": {
+          "kind": "module",
+          "name": "numpy",
+          "repr": "<module 'numpy'>"
+        },
+        "o1": {
+          "kind": "dataframe",
+          "shape": [
+            6,
+            3
+          ],
+          "columns": [
+            "region",
+            "amount",
+            "quarter"
+          ],
+          "dtypes": {
+            "region": "object",
+            "amount": "int64",
+            "quarter": "object"
+          },
+          "index": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "preview": [
+            [
+              "north",
+              120,
+              "Q1"
+            ],
+            [
+              "south",
+              340,
+              "Q1"
+            ],
+            [
+              "north",
+              260,
+              "Q2"
+            ],
+            [
+              "east",
+              90,
+              "Q2"
+            ],
+            [
+              "south",
+              410,
+              "Q3"
+            ],
+            [
+              "north",
+              175,
+              "Q3"
+            ]
+          ],
+          "truncated": false,
+          "repr": "DataFrame[6 rows x 3 cols]"
+        }
+      }
+    },
+    {
+      "i": 2,
+      "line": 6,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "pd": {
+              "ref": "m1"
+            },
+            "np": {
+              "ref": "m2"
+            },
+            "df": {
+              "ref": "o1"
+            },
+            "totals": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "pd",
+            "np",
+            "df",
+            "totals"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "m1": {
+          "kind": "module",
+          "name": "pandas",
+          "repr": "<module 'pandas'>"
+        },
+        "m2": {
+          "kind": "module",
+          "name": "numpy",
+          "repr": "<module 'numpy'>"
+        },
+        "o1": {
+          "kind": "dataframe",
+          "shape": [
+            6,
+            3
+          ],
+          "columns": [
+            "region",
+            "amount",
+            "quarter"
+          ],
+          "dtypes": {
+            "region": "object",
+            "amount": "int64",
+            "quarter": "object"
+          },
+          "index": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "preview": [
+            [
+              "north",
+              120,
+              "Q1"
+            ],
+            [
+              "south",
+              340,
+              "Q1"
+            ],
+            [
+              "north",
+              260,
+              "Q2"
+            ],
+            [
+              "east",
+              90,
+              "Q2"
+            ],
+            [
+              "south",
+              410,
+              "Q3"
+            ],
+            [
+              "north",
+              175,
+              "Q3"
+            ]
+          ],
+          "truncated": false,
+          "repr": "DataFrame[6 rows x 3 cols]"
+        },
+        "o2": {
+          "kind": "series",
+          "shape": [
+            3
+          ],
+          "dtype": "int64",
+          "name": "amount",
+          "index": [
+            "east",
+            "north",
+            "south"
+          ],
+          "preview": [
+            [
+              "east",
+              90
+            ],
+            [
+              "north",
+              555
+            ],
+            [
+              "south",
+              750
+            ]
+          ],
+          "repr": "Series[3]"
+        }
+      }
+    },
+    {
+      "i": 3,
+      "line": 7,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 7,
+          "locals": {
+            "pd": {
+              "ref": "m1"
+            },
+            "np": {
+              "ref": "m2"
+            },
+            "df": {
+              "ref": "o1"
+            },
+            "totals": {
+              "ref": "o2"
+            },
+            "arr": {
+              "ref": "o3"
+            }
+          },
+          "order": [
+            "pd",
+            "np",
+            "df",
+            "totals",
+            "arr"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "m1": {
+          "kind": "module",
+          "name": "pandas",
+          "repr": "<module 'pandas'>"
+        },
+        "m2": {
+          "kind": "module",
+          "name": "numpy",
+          "repr": "<module 'numpy'>"
+        },
+        "o1": {
+          "kind": "dataframe",
+          "shape": [
+            6,
+            3
+          ],
+          "columns": [
+            "region",
+            "amount",
+            "quarter"
+          ],
+          "dtypes": {
+            "region": "object",
+            "amount": "int64",
+            "quarter": "object"
+          },
+          "index": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "preview": [
+            [
+              "north",
+              120,
+              "Q1"
+            ],
+            [
+              "south",
+              340,
+              "Q1"
+            ],
+            [
+              "north",
+              260,
+              "Q2"
+            ],
+            [
+              "east",
+              90,
+              "Q2"
+            ],
+            [
+              "south",
+              410,
+              "Q3"
+            ],
+            [
+              "north",
+              175,
+              "Q3"
+            ]
+          ],
+          "truncated": false,
+          "repr": "DataFrame[6 rows x 3 cols]"
+        },
+        "o2": {
+          "kind": "series",
+          "shape": [
+            3
+          ],
+          "dtype": "int64",
+          "name": "amount",
+          "index": [
+            "east",
+            "north",
+            "south"
+          ],
+          "preview": [
+            [
+              "east",
+              90
+            ],
+            [
+              "north",
+              555
+            ],
+            [
+              "south",
+              750
+            ]
+          ],
+          "repr": "Series[3]"
+        },
+        "o3": {
+          "kind": "ndarray",
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "int64",
+          "preview": [
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          "repr": "array([[1, 2], [3, 4]])"
+        }
+      }
+    },
+    {
+      "i": 4,
+      "line": 7,
+      "event": "return",
+      "stdout_len": 73,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 7,
+          "locals": {
+            "pd": {
+              "ref": "m1"
+            },
+            "np": {
+              "ref": "m2"
+            },
+            "df": {
+              "ref": "o1"
+            },
+            "totals": {
+              "ref": "o2"
+            },
+            "arr": {
+              "ref": "o3"
+            }
+          },
+          "order": [
+            "pd",
+            "np",
+            "df",
+            "totals",
+            "arr"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "m1": {
+          "kind": "module",
+          "name": "pandas",
+          "repr": "<module 'pandas'>"
+        },
+        "m2": {
+          "kind": "module",
+          "name": "numpy",
+          "repr": "<module 'numpy'>"
+        },
+        "o1": {
+          "kind": "dataframe",
+          "shape": [
+            6,
+            3
+          ],
+          "columns": [
+            "region",
+            "amount",
+            "quarter"
+          ],
+          "dtypes": {
+            "region": "object",
+            "amount": "int64",
+            "quarter": "object"
+          },
+          "index": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "preview": [
+            [
+              "north",
+              120,
+              "Q1"
+            ],
+            [
+              "south",
+              340,
+              "Q1"
+            ],
+            [
+              "north",
+              260,
+              "Q2"
+            ],
+            [
+              "east",
+              90,
+              "Q2"
+            ],
+            [
+              "south",
+              410,
+              "Q3"
+            ],
+            [
+              "north",
+              175,
+              "Q3"
+            ]
+          ],
+          "truncated": false,
+          "repr": "DataFrame[6 rows x 3 cols]"
+        },
+        "o2": {
+          "kind": "series",
+          "shape": [
+            3
+          ],
+          "dtype": "int64",
+          "name": "amount",
+          "index": [
+            "east",
+            "north",
+            "south"
+          ],
+          "preview": [
+            [
+              "east",
+              90
+            ],
+            [
+              "north",
+              555
+            ],
+            [
+              "south",
+              750
+            ]
+          ],
+          "repr": "Series[3]"
+        },
+        "o3": {
+          "kind": "ndarray",
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "int64",
+          "preview": [
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          "repr": "array([[1, 2], [3, 4]])"
+        }
+      }
+    }
+  ],
+  "stdout": "region\neast      90\nnorth    555\nsouth    750\nName: amount, dtype: int64\n",
+  "limits": {
+    "max_steps": 5000,
+    "max_depth": 6,
+    "max_items": 100,
+    "max_string": 512,
+    "timeout_ms": 10000
+  },
+  "meta": {
+    "step_count": 5,
+    "packages": [
+      "numpy",
+      "pandas",
+      "matplotlib",
+      "scipy",
+      "scikit-learn"
+    ]
+  }
+}

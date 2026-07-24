@@ -1,0 +1,627 @@
+{
+  "version": 1,
+  "language": "python",
+  "status": "ok",
+  "source": "def fact(n):\n    if n <= 1:\n        return 1\n    return n * fact(n - 1)\n\nresult = fact(4)\nprint(result)\n",
+  "steps": [
+    {
+      "i": 0,
+      "line": 1,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 1,
+          "locals": {},
+          "order": [],
+          "is_global": true
+        }
+      ],
+      "heap": {}
+    },
+    {
+      "i": 1,
+      "line": 6,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      }
+    },
+    {
+      "i": 2,
+      "line": 4,
+      "event": "call",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      }
+    },
+    {
+      "i": 3,
+      "line": 4,
+      "event": "call",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#2",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      }
+    },
+    {
+      "i": 4,
+      "line": 4,
+      "event": "call",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#2",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#3",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 2,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      }
+    },
+    {
+      "i": 5,
+      "line": 2,
+      "event": "call",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#2",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#3",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 2,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#4",
+          "name": "fact",
+          "line": 2,
+          "locals": {
+            "n": {
+              "prim": 1,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      }
+    },
+    {
+      "i": 6,
+      "line": 4,
+      "event": "return",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#2",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#3",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 2,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#4",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 1,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      },
+      "returned": {
+        "prim": 1,
+        "prim_type": "int"
+      }
+    },
+    {
+      "i": 7,
+      "line": 4,
+      "event": "return",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#2",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#3",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 2,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      },
+      "returned": {
+        "prim": 2,
+        "prim_type": "int"
+      }
+    },
+    {
+      "i": 8,
+      "line": 4,
+      "event": "return",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        },
+        {
+          "id": "fact#2",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      },
+      "returned": {
+        "prim": 6,
+        "prim_type": "int"
+      }
+    },
+    {
+      "i": 9,
+      "line": 4,
+      "event": "return",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "fact"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "fact#1",
+          "name": "fact",
+          "line": 4,
+          "locals": {
+            "n": {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "n"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      },
+      "returned": {
+        "prim": 24,
+        "prim_type": "int"
+      }
+    },
+    {
+      "i": 10,
+      "line": 7,
+      "event": "line",
+      "stdout_len": 3,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 7,
+          "locals": {
+            "fact": {
+              "ref": "o1"
+            },
+            "result": {
+              "prim": 24,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "fact",
+            "result"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "fact",
+          "repr": "<function fact>"
+        }
+      }
+    }
+  ],
+  "stdout": "24\n",
+  "limits": {
+    "max_steps": 5000,
+    "max_depth": 6,
+    "max_items": 100,
+    "max_string": 512,
+    "timeout_ms": 10000
+  },
+  "meta": {
+    "step_count": 11
+  }
+}

@@ -1,0 +1,128 @@
+# Full-stack deployment for a single VM (target: Oracle Cloud Always Free ARM).
+#
+# Everything here is portable on purpose. Oracle halved that free tier without
+# notice in 2026 and reclaims idle instances, so nothing is Oracle-specific --
+# relocating to any Docker host is a `docker compose up` away.
+#
+#   caddy (public)  ── serves the SPA, proxies /api, terminates TLS
+#     └─ backend    ── orchestration, cache, rate limit, Groq narration
+#          ├─ tracer-python ┐
+#          ├─ tracer-java   │  execute untrusted code under gVisor,
+#          └─ tracer-node   ┘  on an internal (no-internet) network
+#
+# The tracers run under gVisor (runtime: runsc) in production. Set
+# SANDBOX_RUNTIME=runsc once gVisor is installed (see infra/setup-oracle.sh);
+# it defaults to runc so this file also runs on a plain dev machine.
+
+services:
+  caddy:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Set to your domain to get automatic HTTPS; defaults to localhost.
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+    networks:
+      - web
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      VISUALIZER_TRACER_PYTHON: http://tracer-python:8081
+      VISUALIZER_TRACER_JAVA: http://tracer-java:8082
+      VISUALIZER_TRACER_NODE: http://tracer-node:8083
+      # Optional: enables LLM narration when set. Left empty -> narration off.
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+    depends_on:
+      - tracer-python
+      - tracer-java
+      - tracer-node
+    networks:
+      - web       # reachable by caddy
+      - internal  # reaches the tracers
+
+  tracer-python:
+    build:
+      context: ./tracer-python
+    restart: unless-stopped
+    # gVisor is the real isolation boundary for untrusted code. See the note above.
+    runtime: ${SANDBOX_RUNTIME:-runc}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 0.75
+    environment:
+      # Per-run sample data lands here; tmpfs below makes it writable.
+      VIZ_DATA_DIR: /tmp/runs
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid,nodev
+    networks:
+      - internal
+
+  tracer-java:
+    build:
+      context: ./tracer-java
+    restart: unless-stopped
+    runtime: ${SANDBOX_RUNTIME:-runc}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256          # each trace forks a debuggee JVM
+    mem_limit: 900m
+    cpus: 1.0
+    tmpfs:
+      # Compiled classes + per-run dirs live here. noexec is safe: the java
+      # binary is in the (executable) image, and .class files are only read.
+      - /tmp:size=256m,noexec,nosuid,nodev
+    networks:
+      - internal
+
+  tracer-node:
+    build:
+      context: ./tracer-node
+    restart: unless-stopped
+    runtime: ${SANDBOX_RUNTIME:-runc}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128          # each trace forks a debuggee node process
+    mem_limit: 512m
+    cpus: 0.75
+    environment:
+      VIZ_DATA_DIR: /tmp/runs
+    tmpfs:
+      # Per-run snippets land here. noexec is safe: the node binary lives in the
+      # (executable) image, and .js files are only ever read.
+      - /tmp:size=128m,noexec,nosuid,nodev
+    networks:
+      - internal
+
+networks:
+  web:
+    driver: bridge
+  internal:
+    driver: bridge
+    # No route to the internet: untrusted code in the tracers cannot phone home,
+    # exfiltrate data, or pull payloads. The backend bridges web<->internal.
+    internal: true
+
+volumes:
+  caddy-data:
+  caddy-config:

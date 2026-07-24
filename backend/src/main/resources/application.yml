@@ -1,0 +1,42 @@
+server:
+  port: 8080
+  # Uploaded sample data can be sizable; the tracer caps it but the request must
+  # be allowed through to be rejected with a clear message rather than a 413.
+  tomcat:
+    max-swallow-size: 12MB
+  max-http-request-header-size: 16KB
+
+spring:
+  application:
+    name: visualizer-backend
+  mvc:
+    problemdetails:
+      enabled: true
+
+visualizer:
+  tracers:
+    urls:
+      python: ${VISUALIZER_TRACER_PYTHON:http://localhost:8081}
+      java: ${VISUALIZER_TRACER_JAVA:http://localhost:8082}
+      # One service traces both: it transpiles TypeScript and runs the result,
+      # so the only difference between these two entries is what the tracer is
+      # told the source is.
+      javascript: ${VISUALIZER_TRACER_NODE:http://localhost:8083}
+      typescript: ${VISUALIZER_TRACER_NODE:http://localhost:8083}
+  groq:
+    # Empty by default -> narration is disabled and the endpoint returns no
+    # notes. Set GROQ_API_KEY in the environment to enable it.
+    api-key: ${GROQ_API_KEY:}
+    base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+    max-steps-per-request: 45
+    timeout-seconds: 25
+  rate-limit:
+    runs-per-minute: 20
+    burst: 8
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

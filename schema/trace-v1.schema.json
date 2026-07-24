@@ -1,0 +1,425 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visualizer.dev/schema/trace-v1.schema.json",
+  "title": "Visualizer Trace Document v1",
+  "description": "Language-agnostic execution trace. Produced by every tracer backend, consumed by the frontend replayer. The frontend must never need to know which language produced a document.",
+  "type": "object",
+  "required": [
+    "version",
+    "language",
+    "status",
+    "steps",
+    "stdout"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "language": {
+      "description": "Source language. Informational only - the replayer must not branch on this.",
+      "type": "string",
+      "enum": [
+        "python",
+        "java",
+        "javascript",
+        "typescript"
+      ]
+    },
+    "status": {
+      "description": "Terminal outcome of the run. 'ok' means the program ran to completion; 'error' means it raised; 'timeout'/'truncated' mean we stopped it and the trace is partial.",
+      "type": "string",
+      "enum": [
+        "ok",
+        "error",
+        "timeout",
+        "truncated",
+        "compile_error"
+      ]
+    },
+    "source": {
+      "description": "The exact source that was executed, so the replayer can render the code pane without a second round trip.",
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "stdout": {
+      "description": "Full captured stdout for the whole run. Steps index into this via stdout_len rather than each carrying a copy.",
+      "type": "string"
+    },
+    "error": {
+      "$ref": "#/$defs/error"
+    },
+    "limits": {
+      "description": "Caps actually applied to this run. Surfaced in the UI so truncation is never silent.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_steps": {
+          "type": "integer"
+        },
+        "max_depth": {
+          "type": "integer"
+        },
+        "max_items": {
+          "type": "integer"
+        },
+        "max_string": {
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "type": "integer"
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "type": "number"
+        },
+        "step_count": {
+          "type": "integer"
+        },
+        "runtime_version": {
+          "type": "string"
+        },
+        "packages": {
+          "description": "Third-party packages available in the sandbox image, for display in the UI.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "literals": {
+          "description": "How this language spells null, true and false. The replayer must never branch on `language`, so the tracer -- the only party that knows the source language -- sends the spellings with the document.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "null": {
+              "type": "string"
+            },
+            "true": {
+              "type": "string"
+            },
+            "false": {
+              "type": "string"
+            }
+          }
+        },
+        "warnings": {
+          "description": "Non-fatal problems with the run, shown alongside the trace.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": [
+        "i",
+        "line",
+        "event",
+        "frames",
+        "heap"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "i": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "event": {
+          "type": "string",
+          "enum": [
+            "line",
+            "call",
+            "return",
+            "exception"
+          ]
+        },
+        "stdout_len": {
+          "description": "Length of cumulative stdout at this step. The UI slices trace.stdout[0:stdout_len] to show output as of this moment.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "frames": {
+          "description": "Call stack, innermost LAST. Index 0 is the global/main frame.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/frame"
+          }
+        },
+        "heap": {
+          "description": "Object id -> object. Contains every object reachable from any frame at this step.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/heapObject"
+          }
+        },
+        "returned": {
+          "description": "Present on 'return' events: the value handed back to the caller.",
+          "$ref": "#/$defs/value"
+        },
+        "figure": {
+          "description": "Base64 PNG of a matplotlib figure produced at this step, if any.",
+          "type": "string"
+        },
+        "note": {
+          "description": "LLM-generated narration for this step. Filled in by a later pass; absent means no narration.",
+          "type": "string"
+        }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "line",
+        "locals"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Stable across steps for the same invocation. Recursion produces distinct ids per call, which is what lets the UI animate frames independently.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "locals": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        "order": {
+          "description": "Declaration order of locals. JSON objects are unordered, and variables jumping around between steps looks broken.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_global": {
+          "type": "boolean"
+        }
+      }
+    },
+    "value": {
+      "description": "A slot in a frame or inside a container. Exactly one of prim/ref is set. Primitives are inlined; everything else is a reference into the heap, which is what makes aliasing and cycles representable.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prim": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "prim_type": {
+          "description": "Needed to distinguish int 1 from float 1.0, and str '1' from int 1, which JSON alone cannot carry.",
+          "type": "string",
+          "enum": [
+            "int",
+            "float",
+            "bool",
+            "str",
+            "null",
+            "char",
+            "long",
+            "double"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "heapObject": {
+      "description": "'kind' is an OPEN enum by design: new rich types get a dedicated renderer, unknown kinds fall back to a generic box using 'repr'. Adding a type must never require a schema bump.",
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "repr": {
+          "description": "Human-readable fallback rendering. Required for kinds the frontend has no dedicated renderer for.",
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "items": {
+          "description": "list / tuple / set / deque / array elements.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        "total": {
+          "description": "True element count before truncation, so the UI can honestly show '... 940 more'.",
+          "type": "integer"
+        },
+        "entries": {
+          "description": "dict / map entries, order preserved.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "$ref": "#/$defs/value"
+              },
+              "value": {
+                "$ref": "#/$defs/value"
+              }
+            }
+          }
+        },
+        "class": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        "field_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "methods": {
+          "description": "Method names for the class-box renderer. Signatures only, never bodies.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mro": {
+          "description": "Method resolution order / superclass chain, for showing inheritance.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "shape": {
+          "description": "ndarray / DataFrame dimensions.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "dtype": {
+          "type": "string"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dtypes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "index": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "preview": {
+          "description": "Row-major sample of a tabular/array value. Bounded by max_items.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        },
+        "name": {
+          "description": "Function / lambda name for kind 'function'.",
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "type",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer"
+        },
+        "traceback": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

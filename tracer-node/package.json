@@ -1,0 +1,19 @@
+{
+  "name": "tracer-node",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Visualizer JavaScript/TypeScript tracer (V8 inspector over CDP)",
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3",
+    "lodash": "^4.17.21",
+    "dayjs": "^1.11.13"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

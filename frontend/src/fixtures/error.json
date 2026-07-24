@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "language": "python",
+  "status": "error",
+  "source": "def divide(a, b):\n    return a / b\n\nx = divide(10, 0)\n",
+  "steps": [
+    {
+      "i": 0,
+      "line": 4,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 4,
+          "locals": {
+            "divide": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "divide"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "divide",
+          "repr": "<function divide>"
+        }
+      }
+    },
+    {
+      "i": 1,
+      "line": 2,
+      "event": "call",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 4,
+          "locals": {
+            "divide": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "divide"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "divide#1",
+          "name": "divide",
+          "line": 2,
+          "locals": {
+            "a": {
+              "prim": 10,
+              "prim_type": "int"
+            },
+            "b": {
+              "prim": 0,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "a",
+            "b"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "divide",
+          "repr": "<function divide>"
+        }
+      }
+    },
+    {
+      "i": 2,
+      "line": 2,
+      "event": "exception",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 4,
+          "locals": {
+            "divide": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "divide"
+          ],
+          "is_global": true
+        },
+        {
+          "id": "divide#1",
+          "name": "divide",
+          "line": 2,
+          "locals": {
+            "a": {
+              "prim": 10,
+              "prim_type": "int"
+            },
+            "b": {
+              "prim": 0,
+              "prim_type": "int"
+            }
+          },
+          "order": [
+            "a",
+            "b"
+          ]
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "function",
+          "name": "divide",
+          "repr": "<function divide>"
+        }
+      }
+    }
+  ],
+  "stdout": "",
+  "limits": {
+    "max_steps": 5000,
+    "max_depth": 6,
+    "max_items": 100,
+    "max_string": 512,
+    "timeout_ms": 10000
+  },
+  "meta": {
+    "step_count": 3
+  },
+  "error": {
+    "type": "ZeroDivisionError",
+    "message": "division by zero",
+    "line": 2,
+    "traceback": [
+      {
+        "name": "<module>",
+        "line": 4
+      },
+      {
+        "name": "divide",
+        "line": 2
+      }
+    ]
+  }
+}

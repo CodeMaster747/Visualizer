@@ -1,0 +1,28 @@
+# Test configuration.
+#
+# Points the tracers at a dead port so health checks deterministically report
+# "down" regardless of whether a real tracer happens to be running on the dev
+# machine. Narration stays disabled (no key), which is the default the tests
+# assert against.
+visualizer:
+  tracers:
+    urls:
+      python: http://localhost:59999
+      java: http://localhost:59998
+      # JavaScript and TypeScript share one service, which also makes this the
+      # fixture for "two languages, one tracer" in the health aggregation.
+      javascript: http://localhost:59996
+      typescript: http://localhost:59996
+  groq:
+    api-key: ""
+    base-url: http://localhost:59997
+    model: test-model
+    max-steps-per-request: 45
+    timeout-seconds: 5
+  rate-limit:
+    runs-per-minute: 1000
+    burst: 1000
+
+logging:
+  level:
+    com.visualizer: WARN

@@ -1,0 +1,362 @@
+{
+  "version": 1,
+  "language": "python",
+  "status": "ok",
+  "source": "class Node:\n    def __init__(self, value):\n        self.value = value\n        self.next = None\n\n    def __repr__(self):\n        return f\"Node({self.value})\"\n\na = Node(\"first\")\nb = Node(\"second\")\na.next = b\nb.next = a\n",
+  "steps": [
+    {
+      "i": 0,
+      "line": 8,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 8,
+          "locals": {
+            "Node": {
+              "ref": "c1"
+            }
+          },
+          "order": [
+            "Node"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "c1": {
+          "kind": "class",
+          "class": "Node",
+          "methods": [
+            "__init__",
+            "__repr__"
+          ],
+          "mro": [
+            "Node",
+            "object"
+          ],
+          "repr": "<class Node>"
+        }
+      }
+    },
+    {
+      "i": 1,
+      "line": 9,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 9,
+          "locals": {
+            "Node": {
+              "ref": "c1"
+            },
+            "a": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "Node",
+            "a"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "c1": {
+          "kind": "class",
+          "class": "Node",
+          "methods": [
+            "__init__",
+            "__repr__"
+          ],
+          "mro": [
+            "Node",
+            "object"
+          ],
+          "repr": "<class Node>"
+        },
+        "o1": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "first",
+              "prim_type": "str"
+            },
+            "next": {
+              "prim": null,
+              "prim_type": "null"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(first)"
+        }
+      }
+    },
+    {
+      "i": 2,
+      "line": 10,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 10,
+          "locals": {
+            "Node": {
+              "ref": "c1"
+            },
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "Node",
+            "a",
+            "b"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "c1": {
+          "kind": "class",
+          "class": "Node",
+          "methods": [
+            "__init__",
+            "__repr__"
+          ],
+          "mro": [
+            "Node",
+            "object"
+          ],
+          "repr": "<class Node>"
+        },
+        "o1": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "first",
+              "prim_type": "str"
+            },
+            "next": {
+              "prim": null,
+              "prim_type": "null"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(first)"
+        },
+        "o2": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "second",
+              "prim_type": "str"
+            },
+            "next": {
+              "prim": null,
+              "prim_type": "null"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(second)"
+        }
+      }
+    },
+    {
+      "i": 3,
+      "line": 11,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 11,
+          "locals": {
+            "Node": {
+              "ref": "c1"
+            },
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "Node",
+            "a",
+            "b"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "c1": {
+          "kind": "class",
+          "class": "Node",
+          "methods": [
+            "__init__",
+            "__repr__"
+          ],
+          "mro": [
+            "Node",
+            "object"
+          ],
+          "repr": "<class Node>"
+        },
+        "o1": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "first",
+              "prim_type": "str"
+            },
+            "next": {
+              "ref": "o2"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(first)"
+        },
+        "o2": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "second",
+              "prim_type": "str"
+            },
+            "next": {
+              "prim": null,
+              "prim_type": "null"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(second)"
+        }
+      }
+    },
+    {
+      "i": 4,
+      "line": 11,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 11,
+          "locals": {
+            "Node": {
+              "ref": "c1"
+            },
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "Node",
+            "a",
+            "b"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "c1": {
+          "kind": "class",
+          "class": "Node",
+          "methods": [
+            "__init__",
+            "__repr__"
+          ],
+          "mro": [
+            "Node",
+            "object"
+          ],
+          "repr": "<class Node>"
+        },
+        "o1": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "first",
+              "prim_type": "str"
+            },
+            "next": {
+              "ref": "o2"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(first)"
+        },
+        "o2": {
+          "kind": "instance",
+          "class": "Node",
+          "fields": {
+            "value": {
+              "prim": "second",
+              "prim_type": "str"
+            },
+            "next": {
+              "ref": "o1"
+            }
+          },
+          "field_order": [
+            "value",
+            "next"
+          ],
+          "repr": "Node(second)"
+        }
+      }
+    }
+  ],
+  "stdout": "",
+  "limits": {
+    "max_steps": 5000,
+    "max_depth": 6,
+    "max_items": 100,
+    "max_string": 512,
+    "timeout_ms": 10000
+  },
+  "meta": {
+    "step_count": 5
+  }
+}

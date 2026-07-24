@@ -1,0 +1,408 @@
+{
+  "version": 1,
+  "language": "python",
+  "status": "ok",
+  "source": "a = [1, 2, 3]\nb = a\nc = list(a)\na.append(4)\nb[0] = 99\nprint(a, b, c)\n",
+  "steps": [
+    {
+      "i": 0,
+      "line": 1,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 1,
+          "locals": {},
+          "order": [],
+          "is_global": true
+        }
+      ],
+      "heap": {}
+    },
+    {
+      "i": 1,
+      "line": 2,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 2,
+          "locals": {
+            "a": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "a"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        }
+      }
+    },
+    {
+      "i": 2,
+      "line": 3,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 3,
+          "locals": {
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o1"
+            }
+          },
+          "order": [
+            "a",
+            "b"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        }
+      }
+    },
+    {
+      "i": 3,
+      "line": 4,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 4,
+          "locals": {
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o1"
+            },
+            "c": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        },
+        "o2": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        }
+      }
+    },
+    {
+      "i": 4,
+      "line": 5,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 5,
+          "locals": {
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o1"
+            },
+            "c": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            },
+            {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          ],
+          "total": 4
+        },
+        "o2": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        }
+      }
+    },
+    {
+      "i": 5,
+      "line": 6,
+      "event": "line",
+      "stdout_len": 0,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o1"
+            },
+            "c": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 99,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            },
+            {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          ],
+          "total": 4
+        },
+        "o2": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        }
+      }
+    },
+    {
+      "i": 6,
+      "line": 6,
+      "event": "return",
+      "stdout_len": 38,
+      "frames": [
+        {
+          "id": "f0",
+          "name": "<module>",
+          "line": 6,
+          "locals": {
+            "a": {
+              "ref": "o1"
+            },
+            "b": {
+              "ref": "o1"
+            },
+            "c": {
+              "ref": "o2"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c"
+          ],
+          "is_global": true
+        }
+      ],
+      "heap": {
+        "o1": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 99,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            },
+            {
+              "prim": 4,
+              "prim_type": "int"
+            }
+          ],
+          "total": 4
+        },
+        "o2": {
+          "kind": "list",
+          "items": [
+            {
+              "prim": 1,
+              "prim_type": "int"
+            },
+            {
+              "prim": 2,
+              "prim_type": "int"
+            },
+            {
+              "prim": 3,
+              "prim_type": "int"
+            }
+          ],
+          "total": 3
+        }
+      }
+    }
+  ],
+  "stdout": "[99, 2, 3, 4] [99, 2, 3, 4] [1, 2, 3]\n",
+  "limits": {
+    "max_steps": 5000,
+    "max_depth": 6,
+    "max_items": 100,
+    "max_string": 512,
+    "timeout_ms": 10000
+  },
+  "meta": {
+    "step_count": 7
+  }
+}
