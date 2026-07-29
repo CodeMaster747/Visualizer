@@ -167,6 +167,11 @@ const server = http.createServer((req, res) => {
   send(res, req.url === "/trace" ? 405 : 404, { error: "not_found" });
 });
 
-server.listen(PORT, "0.0.0.0", () => {
+// 0.0.0.0 is right under compose, where this is the only thing in its container.
+// Set BIND_HOST=127.0.0.1 when the tracer shares a container with a public
+// listener, so nothing but that listener is reachable.
+const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
+
+server.listen(PORT, BIND_HOST, () => {
   console.log(`tracer-node listening on :${PORT}`);
 });
