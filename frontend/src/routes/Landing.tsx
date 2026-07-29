@@ -127,7 +127,7 @@ const FEATURES: Feature[] = [
     points: [
       "Aliasing stays visible — a = b = [1, 2] is one object, two names",
       "Cycles render as cycles rather than repeating forever",
-      "A value that just changed is the only thing on screen using colour",
+      "A value that just changed is the brightest thing on screen, and the only one",
     ],
     visual: <HeapVisual />,
   },
@@ -272,7 +272,7 @@ export function Landing() {
       {/* Wordmark only. A "Sign in" link up here would go exactly where the
           hero button already goes. */}
       <header className={`${SHELL} flex h-16 items-center gap-2.5`}>
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-white">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-on-accent">
           <Icon name="box" size={14} />
         </span>
         <span className="text-[13px] font-semibold text-ink">Visualizer</span>

@@ -11,11 +11,15 @@ import { motion } from "framer-motion";
 import { usePlayback } from "../store/playback";
 import { useAtEnd, useCurrentStep, useVisibleStdout } from "../store/selectors";
 
+/**
+ * A successful run needs no announcement, so "ok" is the quietest thing here.
+ * Only the states the reader has to act on are given any weight.
+ */
 const STATUS_STYLE: Record<string, string> = {
-  ok: "text-fresh",
+  ok: "text-ink-faint",
   error: "text-danger",
-  timeout: "text-changed",
-  truncated: "text-changed",
+  timeout: "text-ink",
+  truncated: "text-ink",
   compile_error: "text-danger",
 };
 
@@ -67,7 +71,7 @@ export function OutputPane() {
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 rounded-lg border border-danger/40 bg-danger-soft/40 p-3"
+            className="mt-3 rounded-lg border border-danger/40 bg-danger-soft p-3"
           >
             <div className="font-mono text-[11px] font-semibold text-danger">
               {trace.error!.type}
@@ -94,8 +98,8 @@ export function OutputPane() {
       </div>
 
       {(trace.status === "truncated" || trace.status === "timeout") && (
-        <div className="border-t border-border-soft bg-changed-soft/30 px-4 py-2
-                        font-mono text-[10px] leading-relaxed text-changed">
+        <div className="border-t border-border bg-surface-2 px-4 py-2
+                        font-mono text-[10px] leading-relaxed text-ink-dim">
           {trace.status === "timeout"
             ? `Execution stopped after ${(trace.limits?.timeout_ms ?? 0) / 1000}s — trace is partial.`
             : `Trace hit the ${trace.limits?.max_steps ?? "step"} limit — showing the first portion.`}

@@ -1,7 +1,9 @@
 package com.visualizer.llm;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,6 +67,16 @@ public class NarrationService {
         }
 
         List<Integer> sampled = sampleIndices(trace.path("steps").size());
+        if (sampled.isEmpty()) {
+            return result; // nothing to describe; asking anyway invites invention
+        }
+        // The set of steps the model was actually shown. Anything outside it is
+        // a step the model never saw, so a sentence about it was invented -- and
+        // a confident wrong explanation next to a real step is worse than none.
+        Set<String> offered = new HashSet<>();
+        for (int idx : sampled) {
+            offered.add(String.valueOf(idx));
+        }
         String user = buildPrompt(trace, sampled);
 
         groq.completeJson(SYSTEM_PROMPT, user).ifPresent(content -> {
@@ -74,7 +86,7 @@ public class NarrationService {
                 JsonNode map = parsed.has("notes") ? parsed.get("notes") : parsed;
                 map.fields().forEachRemaining(e -> {
                     String sentence = e.getValue().asText("").trim();
-                    if (!sentence.isEmpty() && isInteger(e.getKey())) {
+                    if (!sentence.isEmpty() && offered.contains(e.getKey())) {
                         notes.put(e.getKey(), sentence);
                     }
                 });
@@ -174,18 +186,6 @@ public class NarrationService {
             return repr.isEmpty() ? kind : (kind + " " + repr);
         }
         return "?";
-    }
-
-    private static boolean isInteger(String s) {
-        if (s.isEmpty()) {
-            return false;
-        }
-        for (int i = 0; i < s.length(); i++) {
-            if (!Character.isDigit(s.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static final String SYSTEM_PROMPT = """

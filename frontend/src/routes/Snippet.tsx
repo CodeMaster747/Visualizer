@@ -240,7 +240,7 @@ export function Snippet() {
           <Panel title="Output" right={<OutputStatus />}>
             {error ? (
               <div className="p-4">
-                <div className="rounded-lg border border-danger/40 bg-danger-soft/40 p-3
+                <div className="rounded-lg border border-danger/40 bg-danger-soft p-3
                                 font-mono text-[11px] leading-relaxed text-danger">
                   {error}
                 </div>

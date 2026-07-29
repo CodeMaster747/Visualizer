@@ -1,47 +1,65 @@
 @import "tailwindcss";
 
 /*
-  Visualizer theme.
+  Visualizer theme -- monochrome.
 
-  Deliberately dark and low-chroma so the ONE thing that carries meaning --
-  a value changing -- can use saturated colour and actually stand out. If the
-  chrome is colourful, the highlight has nowhere to go.
+  ONE hue (a cool near-neutral) and one luminance ramp. Every surface, border
+  and glyph is a step on that ramp, which is what lets the interface read as a
+  single machined material rather than a set of coloured parts.
 
-  Depth comes from layered surfaces and low-opacity white borders, never from
-  shadows: a floating card in a tool this dense reads as noise.
+  Meaning is carried by LIGHT, not by hue. In a field this desaturated,
+  brightness is the loudest channel available, so the one thing that must
+  interrupt the reader -- a value changing -- is simply the brightest thing on
+  screen. Failure keeps the single muted red below: an error that looks like
+  everything else is the one ambiguity worth spending a hue on.
+
+  Depth comes from layered surfaces, hairline borders and a 1px inner highlight
+  -- never from drop shadows, which in a view this dense read as noise.
 */
 
 @theme {
-  --color-canvas: #0a0c10;
-  --color-surface: #0f1116;
-  --color-surface-2: #14171d;
-  --color-surface-3: #1a1e26;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-strong: rgba(255, 255, 255, 0.15);
-  --color-border-soft: rgba(255, 255, 255, 0.06);
+  --color-canvas: #08090c;
+  --color-surface: #0d0f13;
+  --color-surface-2: #131519;
+  --color-surface-3: #191c22;
+  /* Raised: hover states and controls that sit on top of surface-2. */
+  --color-surface-4: #22252c;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-border-soft: rgba(255, 255, 255, 0.045);
   /* Heap edges. Drawn on the canvas rather than against a surface, so they
      need more presence than a border to stay legible at 1.5px. */
-  --color-edge: rgba(255, 255, 255, 0.3);
+  --color-edge: rgba(255, 255, 255, 0.26);
 
-  --color-ink: #f2f4f8;
-  --color-ink-dim: rgba(255, 255, 255, 0.64);
-  --color-ink-faint: rgba(255, 255, 255, 0.44);
+  --color-ink: #edeef1;
+  --color-ink-dim: rgba(237, 238, 241, 0.62);
+  --color-ink-faint: rgba(237, 238, 241, 0.36);
 
-  /* Semantic accents. Amber = "this just changed" and is reserved for that. */
-  --color-accent: #4c7ef3;
-  --color-accent-soft: #1b2a4e;
-  --color-changed: #f5a524;
-  --color-changed-soft: #4a3410;
-  --color-fresh: #2dd4a7;
-  --color-fresh-soft: #123a30;
-  --color-danger: #f4666e;
-  --color-danger-soft: #4a1a1f;
+  /* The accent is light itself: a platinum used for interactive and structural
+     emphasis. Anything filled with it takes --color-on-accent for its text. */
+  --color-accent: #ccd2de;
+  --color-accent-soft: rgba(204, 210, 222, 0.11);
+  --color-on-accent: #08090c;
 
-  /* Type colours for value chips. */
-  --color-t-int: #7dd3fc;
-  --color-t-str: #a5e887;
-  --color-t-bool: #d8b4fe;
-  --color-t-null: #6b7794;
+  /* "This just changed" -- pure light, the top of the ramp, reserved for that
+     one meaning so nothing else on screen competes with it. */
+  --color-changed: #ffffff;
+  --color-changed-soft: rgba(255, 255, 255, 0.13);
+  /* "This is new." One step below `changed`: present, but never louder than
+     the value that actually moved. */
+  --color-fresh: #b9bfcc;
+  --color-fresh-soft: rgba(185, 191, 204, 0.10);
+  /* The single exception to the monochrome. */
+  --color-danger: #e0736f;
+  --color-danger-soft: rgba(224, 115, 111, 0.13);
+
+  /* Value types, separated by weight rather than hue -- the glyphs already
+     differ (quotes, keywords), so tone only has to rank them: numbers are the
+     data, text supports it, absence recedes. */
+  --color-t-int: #f4f5f7;
+  --color-t-str: rgba(237, 238, 241, 0.78);
+  --color-t-bool: rgba(237, 238, 241, 0.78);
+  --color-t-null: rgba(237, 238, 241, 0.34);
 
   /* One radius scale. 12px is the default for anything card-sized. */
   --radius-sm: 6px;
@@ -66,7 +84,16 @@ body,
 }
 
 body {
-  background: var(--color-canvas);
+  /* A single cool light source high on the page. It is what keeps a flat
+     near-black from looking like an unlit rectangle, and it is the only
+     gradient in the app. */
+  background:
+    radial-gradient(
+      120% 80% at 50% -20%,
+      rgba(255, 255, 255, 0.035) 0%,
+      transparent 60%
+    ),
+    var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 13px;
@@ -77,10 +104,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Optical tightening: the larger the type, the more the default tracking
+   reads as loose. */
 h1,
 h2,
 h3 {
-  letter-spacing: -0.02em;
+  letter-spacing: -0.022em;
+}
+h1 {
+  letter-spacing: -0.035em;
 }
 
 /* Tabular figures everywhere numbers are read as data, not prose. */
@@ -126,44 +158,53 @@ h3 {
   background: transparent;
   cursor: pointer;
 }
+/*
+  Progress is stated quietly and the head is the bright point. A track filled
+  at full accent draws more attention across its whole length than the one
+  position on it that the reader is actually controlling.
+*/
 .viz-scrubber::-webkit-slider-runnable-track {
-  height: 4px;
+  height: 3px;
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--color-accent) var(--fill, 0%),
-    var(--color-surface-3) var(--fill, 0%)
+    var(--color-ink-faint) var(--fill, 0%),
+    var(--color-surface-4) var(--fill, 0%)
   );
 }
 .viz-scrubber::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   margin-top: -4px;
   border-radius: 999px;
   background: var(--color-ink);
+  /* A ring in the bar's own colour, so the head reads as a bead ON the track
+     rather than a dot floating above it. */
+  box-shadow: 0 0 0 3px var(--color-surface);
   transition: transform 150ms var(--ease-standard);
 }
 .viz-scrubber:hover::-webkit-slider-thumb,
 .viz-scrubber:active::-webkit-slider-thumb {
-  transform: scale(1.15);
+  transform: scale(1.18);
 }
 .viz-scrubber::-moz-range-track {
-  height: 4px;
+  height: 3px;
   border-radius: 999px;
-  background: var(--color-surface-3);
+  background: var(--color-surface-4);
 }
 .viz-scrubber::-moz-range-progress {
-  height: 4px;
+  height: 3px;
   border-radius: 999px;
-  background: var(--color-accent);
+  background: var(--color-ink-faint);
 }
 .viz-scrubber::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border: none;
   border-radius: 999px;
   background: var(--color-ink);
+  box-shadow: 0 0 0 3px var(--color-surface);
 }
 
 /* The current-line marker in Monaco. */

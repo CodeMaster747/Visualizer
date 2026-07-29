@@ -84,7 +84,7 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:pr-8">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-on-accent">
                 <Icon name="box" size={14} />
               </span>
               <span className="text-[13px] font-semibold text-ink">Visualizer</span>

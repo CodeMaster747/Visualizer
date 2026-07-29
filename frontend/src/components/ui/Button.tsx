@@ -17,8 +17,10 @@ type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const VARIANT: Record<Variant, string> = {
+  // Light on dark. In a monochrome interface the brightest surface is the
+  // strongest call to action available, and it needs no colour to say so.
   primary:
-    "bg-accent text-white hover:brightness-110 disabled:hover:brightness-100",
+    "bg-ink text-on-accent hover:bg-white disabled:hover:bg-ink",
   secondary:
     "border border-border bg-surface-2 text-ink hover:border-border-strong hover:bg-surface-3",
   ghost: "text-ink-dim hover:bg-surface-2 hover:text-ink",
@@ -35,7 +37,7 @@ const SIZE: Record<Size, string> = {
 const ICON_SIZE: Record<Size, string> = { sm: "h-8 w-8", md: "h-9 w-9", lg: "h-11 w-11" };
 
 const BASE = `inline-flex shrink-0 items-center justify-center rounded-lg font-medium
-              transition-[background-color,border-color,color,filter] duration-150
+              transition-[background-color,border-color,color] duration-150
               disabled:cursor-not-allowed disabled:opacity-40`;
 
 interface Style {

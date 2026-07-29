@@ -178,6 +178,46 @@ class JdiTracerTest {
     }
 
     @Test
+    void uncaughtExceptionCarriesTheUserCallStack() throws Exception {
+        Map<String, Object> doc = trace("""
+                public class Main {
+                    static int boom(int n) {
+                        return 10 / n;
+                    }
+
+                    public static void main(String[] args) {
+                        int x = boom(0);
+                    }
+                }
+                """);
+        Map<String, Object> error = (Map<String, Object>) doc.get("error");
+        List<Map<String, Object>> tb = (List<Map<String, Object>>) error.get("traceback");
+        assertNotNull(tb, "a Java error should report a stack like every other language");
+        assertEquals(List.of("main", "boom"),
+                tb.stream().map(f -> f.get("name")).toList());
+        assertEquals(List.of(7, 3), tb.stream()
+                .map(f -> ((Number) f.get("line")).intValue()).toList());
+    }
+
+    @Test
+    void theJvmsOwnCrashReportNeverReachesStdout() throws Exception {
+        // The JVM prints "Exception in thread main ..." on stderr as it unwinds.
+        // That is the same failure the `error` block already describes, and no
+        // other tracer puts it in stdout -- so the run must stop at the throw.
+        Map<String, Object> doc = trace("""
+                public class Main {
+                    public static void main(String[] args) {
+                        System.out.println("before");
+                        int x = 1 / 0;
+                    }
+                }
+                """);
+        assertEquals("error", doc.get("status"));
+        assertEquals("before\n", doc.get("stdout"),
+                "output printed before the throw must survive, and nothing else");
+    }
+
+    @Test
     void compileErrorProducesAValidEmptyTrace() throws Exception {
         Map<String, Object> doc = trace("int x = ;\n");
         assertEquals("compile_error", doc.get("status"));

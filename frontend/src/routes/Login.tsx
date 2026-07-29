@@ -99,7 +99,7 @@ export function Login() {
           to="/"
           className="flex items-center gap-2.5 text-ink-dim transition-colors duration-150 hover:text-ink"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-white">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-on-accent">
             <Icon name="box" size={14} />
           </span>
           <span className="text-[13px] font-semibold text-ink">Visualizer</span>

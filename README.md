@@ -15,14 +15,14 @@ datasets**.
 | `schema/` — trace format v1 + validator | done |
 | `frontend/` — landing page, sign-in, app shell (home, sidebar, settings) + replayer (code, stack, animated heap graph, timeline, narration) | done |
 | `tracer-python/` — `sys.monitoring` tracer + FastAPI service | done, 37 tests |
-| `tracer-java/` — JDI tracer + HTTP service | done, 13 tests |
-| `tracer-node/` — V8 inspector tracer for JS + TS + HTTP service | done, 26 tests |
-| `backend/` — Spring Boot orchestrator: cache, rate limit, Groq narration | done, 23 tests |
+| `tracer-java/` — JDI tracer + HTTP service | done, 15 tests |
+| `tracer-node/` — V8 inspector tracer for JS + TS + HTTP service | done, 28 tests |
+| `backend/` — Spring Boot orchestrator: cache, rate limit, Groq narration | done, 26 tests |
 | `infra/` — Docker Compose, Caddy, gVisor + Oracle setup | done |
 | Codebase-visualization section | not started (phase 2) |
 
 Snippet visualization is complete for **Python, Java, JavaScript and
-TypeScript**, deployable to a single VM. 133 tests pass across the six suites.
+TypeScript**, deployable to a single VM. 140 tests pass across the six suites.
 
 ## Running it
 
@@ -77,9 +77,9 @@ is the one file that changes when real auth arrives.
 
 ```bash
 cd tracer-python && .venv/bin/python -m pytest tests/ -q   # 37 — tracer + snapshotter
-cd tracer-java   && mvn test                               # 13 — JDI tracer (launches JVMs)
-cd tracer-node   && npm test                               # 26 — CDP tracer (launches node)
-cd backend       && mvn test                               # 23 — cache, rate limit, narration
+cd tracer-java   && mvn test                               # 15 — JDI tracer (launches JVMs)
+cd tracer-node   && npm test                               # 28 — CDP tracer (launches node)
+cd backend       && mvn test                               # 26 — cache, rate limit, narration
 cd frontend      && npx vitest run                         # 34 — diff logic, routing, app shell
 .venv-tools/bin/python schema/validate_fixtures.py         # fixtures vs schema
 ```

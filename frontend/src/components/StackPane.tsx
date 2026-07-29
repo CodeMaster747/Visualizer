@@ -107,7 +107,7 @@ export function StackPane() {
 
               {isActive && step.event === "return" && step.returned && (
                 <div className="flex h-8 items-center justify-between gap-2 border-t border-border-soft
-                                bg-fresh-soft/40 px-3">
+                                bg-fresh-soft px-3">
                   <span className="font-mono text-[11px] text-fresh">returns</span>
                   <ValueChip value={step.returned} heap={step.heap} changed />
                 </div>

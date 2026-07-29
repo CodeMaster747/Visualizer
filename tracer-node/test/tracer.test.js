@@ -243,6 +243,26 @@ describe("failure modes", () => {
     assert.ok(!JSON.stringify(doc.error).includes(os.tmpdir()), "path must not leak");
   });
 
+  it("blames a syntax error on the user's line, not the module loader's", async () => {
+    // The debugger's first stop for an unparseable snippet is inside Node's
+    // loader. Reporting that frame would point the UI at a four-figure line
+    // number in a file the reader has never seen.
+    const doc = await run("const a = 1;\nconst b = ;\nconst c = 3;\n");
+    assert.equal(doc.status, "compile_error");
+    assert.equal(doc.error.line, 2);
+    assert.ok(!/wrapSafe|wrapModuleLoad|internal\//.test(JSON.stringify(doc.error)),
+      `internal frames leaked: ${JSON.stringify(doc.error)}`);
+  });
+
+  it("reports a syntax error in an ES module, which never pauses at all", async () => {
+    // ESM fails while linking, before any frame exists, so the run produces no
+    // steps and no exception -- which must not be read as a program that ran.
+    const doc = await run('import fs from "node:fs";\nconst x = {;\n');
+    assert.equal(doc.status, "compile_error");
+    assert.match(doc.error.type, /Error/);
+    assert.equal(doc.error.line, 2);
+  });
+
   it("stops a runaway loop and returns the partial trace", async () => {
     const doc = await run("let i = 0;\nwhile (true) { i++; }\n", { limits: { max_steps: 40 } });
     assert.equal(doc.status, "truncated");

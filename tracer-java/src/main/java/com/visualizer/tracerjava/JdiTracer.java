@@ -69,6 +69,8 @@ public final class JdiTracer {
     private String status = "ok";
     private Map<String, Object> error;
     private long deadline;
+    /** Set once an uncaught exception has been recorded. See {@link #onException}. */
+    private boolean stoppedAtThrow = false;
 
     public JdiTracer(String originalSource, UserProgram program, Limits limits, int lineOffset) {
         this.originalSource = originalSource;
@@ -102,6 +104,14 @@ public final class JdiTracer {
                         e.getMessage() == null ? "Tracer error" : e.getMessage(), 1);
             }
         } finally {
+            // After an uncaught throw the debuggee is suspended at the throw site
+            // and must be killed BEFORE dispose(), which resumes every thread --
+            // that resume is what would let the JVM unwind and print its own
+            // "Exception in thread main" report onto the captured stream.
+            // Output already written is still in the pipe and stays readable.
+            if (stoppedAtThrow && process != null) {
+                process.destroyForcibly();
+            }
             if (vm != null) {
                 try {
                     vm.dispose();
@@ -123,8 +133,12 @@ public final class JdiTracer {
         LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
         Map<String, Connector.Argument> args = connector.defaultArguments();
         args.get("main").setValue(program.mainClass);
+        // Extra debuggee JVM flags, for hosts where this process and the debuggee
+        // share one small memory budget (e.g. -Xmx64m). Empty by default.
+        String extra = System.getenv().getOrDefault("VIZ_DEBUGGEE_OPTS", "").trim();
         // Quote the classpath dir; it is a temp path but may contain spaces.
-        args.get("options").setValue("-cp \"" + program.dir.toAbsolutePath() + "\"");
+        String opts = "-cp \"" + program.dir.toAbsolutePath() + "\"";
+        args.get("options").setValue(extra.isEmpty() ? opts : extra + " " + opts);
         return connector.launch(args);
     }
 
@@ -196,7 +210,10 @@ public final class JdiTracer {
                     disconnected = true;
                 }
             }
-            if (disconnected) {
+            if (disconnected || stoppedAtThrow) {
+                // Returning without resuming leaves the debuggee suspended at the
+                // throw, so the run ends exactly where the trace does -- the same
+                // "partial trace up to the throw" the other tracers produce.
                 return;
             }
             set.resume();
@@ -259,6 +276,35 @@ public final class JdiTracer {
         status = "error";
         error = errorDoc(exceptionType(event.exception()),
                 exceptionMessage(event.exception()), line);
+        error.put("traceback", traceback(event.thread()));
+        stoppedAtThrow = true;
+    }
+
+    /**
+     * The user-visible call stack at the throw, outermost first.
+     *
+     * The other tracers report this and the UI lists it under the error, so a
+     * Java error would otherwise be the one kind that arrives without a stack.
+     * JDK frames are left out for the same reason they are never stepped into.
+     */
+    private List<Map<String, Object>> traceback(ThreadReference thread) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        try {
+            List<StackFrame> frames = thread.frames();
+            for (int i = frames.size() - 1; i >= 0; i--) {
+                Location loc = frames.get(i).location();
+                if (!isUserLocation(loc)) {
+                    continue;
+                }
+                Map<String, Object> entry = new LinkedHashMap<>();
+                entry.put("name", loc.method().name());
+                entry.put("line", mapLine(loc.lineNumber()));
+                out.add(entry);
+            }
+        } catch (Exception ignored) {
+            // The thread may already be gone; an absent stack is better than none.
+        }
+        return out;
     }
 
     // -- step recording -----------------------------------------------------

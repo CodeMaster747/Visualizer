@@ -34,8 +34,8 @@ function NavItem({ item, collapsed }: { item: Item; collapsed: boolean }) {
       className={({ isActive }) =>
         `flex h-9 items-center gap-3 rounded-lg px-3 transition-colors duration-150 ${
           isActive
-            ? "bg-surface-3 text-ink"
-            : "text-ink-dim hover:bg-surface-2 hover:text-ink"
+            ? "bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--color-border-soft)]"
+            : "text-ink-dim hover:bg-surface-2/60 hover:text-ink"
         }`
       }
     >
@@ -64,7 +64,7 @@ export function Sidebar() {
                   ${collapsed ? "w-14" : "w-60"}`}
     >
       <div className="flex h-14 shrink-0 items-center gap-3 overflow-hidden px-3">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent text-white">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent text-on-accent">
           <Icon name="box" size={14} />
         </div>
         <span

@@ -218,7 +218,7 @@ export function PlaybackVisual() {
             key={name}
             className={`flex h-8 w-8 items-center justify-center rounded-lg ${
               name === "play"
-                ? "bg-accent text-white"
+                ? "bg-accent text-on-accent"
                 : "border border-border bg-surface-2 text-ink-dim"
             }`}
           >

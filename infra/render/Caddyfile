@@ -1,0 +1,35 @@
+# Caddy for the single-container (Render) build.
+#
+# Differs from infra/Caddyfile in two ways, both forced by the platform:
+#   - Render terminates TLS at its edge and hands us plain HTTP on $PORT, so
+#     automatic HTTPS is off and there is no domain block.
+#   - The backend is a sibling process in this container, not a DNS name on a
+#     Docker network, so /api proxies to loopback.
+
+{
+	admin off
+	auto_https off
+}
+
+:{$PORT:10000} {
+	encode gzip zstd
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	# SPA fallback: unknown paths return index.html so client-side routes
+	# (/app/snippet and friends) survive a refresh.
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

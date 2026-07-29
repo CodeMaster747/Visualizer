@@ -46,8 +46,8 @@ export function Dialog({ title, body, confirmLabel, onConfirm, onCancel }: Props
           </button>
           <button
             onClick={onConfirm}
-            className="h-8 rounded-lg bg-accent px-3 text-[12px] font-medium text-white
-                       transition-[filter] duration-150 hover:brightness-110"
+            className="h-8 rounded-lg bg-accent px-3 text-[12px] font-medium text-on-accent
+                       transition-colors duration-150 hover:bg-ink"
           >
             {confirmLabel}
           </button>

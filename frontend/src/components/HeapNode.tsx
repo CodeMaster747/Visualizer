@@ -248,13 +248,21 @@ const RENDERERS: Record<string, (p: RendererProps) => JSX.Element> = {
   ndarray: NdArrayRenderer,
 };
 
-/** Header tint communicates category without needing a legend. */
+/**
+ * Header emphasis, by weight rather than hue.
+ *
+ * The heading already names the kind, so tint was never carrying the meaning
+ * on its own -- it only ranked things. Brightness ranks them just as well and
+ * leaves the loudest step on the ramp free for the value that just changed.
+ */
 const KIND_ACCENT: Record<string, string> = {
-  instance: "text-fresh",
-  class: "text-t-bool",
-  dataframe: "text-changed",
-  series: "text-changed",
-  ndarray: "text-accent",
+  // The reader's own types, and the rich tabular ones: full strength.
+  instance: "text-ink",
+  class: "text-ink",
+  dataframe: "text-ink",
+  series: "text-ink",
+  ndarray: "text-ink",
+  // Machinery they did not write: present, but receding.
   function: "text-ink-faint",
   module: "text-ink-faint",
 };

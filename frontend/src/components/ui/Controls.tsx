@@ -88,9 +88,12 @@ export function Toggle({
       className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors duration-150
                   ${checked ? "border-accent bg-accent" : "border-border bg-surface-3"}`}
     >
+      {/* The knob inverts with the track: on a lit track it is the dark cut-out,
+          on an unlit one it is the lit part. Either way it stays visible. */}
       <span
-        className={`absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white
-                    transition-[left] duration-150 ${checked ? "left-[18px]" : "left-[2px]"}`}
+        className={`absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full
+                    transition-[left,background-color] duration-150
+                    ${checked ? "left-[18px] bg-on-accent" : "left-[2px] bg-ink-faint"}`}
       />
     </button>
   );

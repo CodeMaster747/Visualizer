@@ -1,0 +1,24 @@
+# Render blueprint: the whole stack as one free web service.
+#
+# Free instances are 512 MB / 0.1 vCPU and spin down after 15 minutes idle, so
+# the first request after a quiet spell pays a cold start. Everything the
+# compose deployment splits across five containers runs here as one process
+# table -- see infra/render/Dockerfile and infra/render/README.md.
+
+services:
+  - type: web
+    name: visualizer
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./infra/render/Dockerfile
+    # The Dockerfile copies from frontend/, backend/, tracer-*/ so it needs the
+    # repository root as its context, not the directory it lives in.
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      # Set in the Render dashboard; never commit the key.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile

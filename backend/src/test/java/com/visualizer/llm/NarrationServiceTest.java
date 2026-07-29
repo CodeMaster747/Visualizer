@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class NarrationServiceTest {
@@ -124,6 +126,46 @@ class NarrationServiceTest {
         assertThat(service.narrate(trace).get("notes").get("0").asText()).isEqualTo("First.");
         // Second call must return the cached "First.", proving Groq was not hit again.
         assertThat(service.narrate(trace).get("notes").get("0").asText()).isEqualTo("First.");
+    }
+
+    @Test
+    void notesForStepsBeyondTheTraceAreDropped() throws Exception {
+        GroqClient groq = mock(GroqClient.class);
+        when(groq.enabled()).thenReturn(true);
+        when(groq.completeJson(any(), any()))
+                .thenReturn(Optional.of("{\"0\":\"Real step.\",\"9\":\"No such step.\"}"));
+
+        JsonNode notes = service(groq, "key").narrate(trace(2)).get("notes");
+
+        assertThat(notes.has("0")).isTrue();
+        assertThat(notes.has("9")).isFalse();
+    }
+
+    @Test
+    void aNoteForAStepTheModelNeverSawIsDropped() throws Exception {
+        // A 100-step trace is downsampled, so step 1 is never sent. A sentence
+        // about it describes execution the model did not see -- it invented it,
+        // and it would be shown against a real step.
+        GroqClient groq = mock(GroqClient.class);
+        when(groq.enabled()).thenReturn(true);
+        when(groq.completeJson(any(), any()))
+                .thenReturn(Optional.of("{\"0\":\"Sampled.\",\"1\":\"Invented.\"}"));
+
+        JsonNode notes = service(groq, "key").narrate(trace(100)).get("notes");
+
+        assertThat(notes.has("0")).isTrue();
+        assertThat(notes.has("1")).isFalse();
+    }
+
+    @Test
+    void aTraceWithNoStepsIsNotSentToTheModelAtAll() throws Exception {
+        GroqClient groq = mock(GroqClient.class);
+        when(groq.enabled()).thenReturn(true);
+
+        JsonNode notes = service(groq, "key").narrate(trace(0)).get("notes");
+
+        assertThat(notes).isEmpty();
+        verify(groq, never()).completeJson(any(), any());
     }
 
     @Test

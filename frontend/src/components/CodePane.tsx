@@ -14,28 +14,77 @@ import { useCurrentStep } from "../store/selectors";
 
 const THEME = "visualizer-dark";
 
+/**
+ * A monochrome syntax theme.
+ *
+ * `inherit` is off on purpose: inheriting vs-dark leaves every token this list
+ * does not name -- functions, types, operators -- painted in the base theme's
+ * colours, and the editor is the largest surface in the app, so that leakage
+ * is what a rainbow in the middle of a grey interface looks like.
+ *
+ * Highlighting is done in weight instead. Keywords are the brightest because
+ * they carry the structure; literals sit just below them because they are the
+ * values the reader is here to watch; punctuation and comments recede.
+ */
 function defineTheme(monaco: Monaco) {
   monaco.editor.defineTheme(THEME, {
     base: "vs-dark",
-    inherit: true,
+    inherit: false,
     rules: [
-      { token: "comment", foreground: "6b7280", fontStyle: "italic" },
-      { token: "keyword", foreground: "d8b4fe" },
-      { token: "string", foreground: "a5e887" },
-      { token: "number", foreground: "7dd3fc" },
+      { token: "", foreground: "b6bac2" },
+      { token: "comment", foreground: "565b64", fontStyle: "italic" },
+      { token: "keyword", foreground: "f4f5f7" },
+      { token: "keyword.control", foreground: "f4f5f7" },
+      { token: "string", foreground: "d2d6dd" },
+      { token: "string.escape", foreground: "eceef1" },
+      { token: "number", foreground: "f4f5f7" },
+      { token: "regexp", foreground: "d2d6dd" },
+      { token: "constant", foreground: "eceef1" },
+      { token: "type", foreground: "e4e7ec" },
+      { token: "type.identifier", foreground: "e4e7ec" },
+      { token: "identifier", foreground: "b6bac2" },
+      { token: "variable", foreground: "b6bac2" },
+      { token: "function", foreground: "e4e7ec" },
+      { token: "tag", foreground: "e4e7ec" },
+      { token: "attribute.name", foreground: "b6bac2" },
+      { token: "delimiter", foreground: "868c96" },
+      { token: "operator", foreground: "868c96" },
+      { token: "annotation", foreground: "868c96" },
+      { token: "invalid", foreground: "e0736f" },
     ],
     // Must track the tokens in index.css: the editor sits inside a panel and
     // any mismatch shows as a seam along the panel's inner edge.
     colors: {
-      "editor.background": "#0f1116",
-      "editor.foreground": "#f2f4f8",
-      "editorLineNumber.foreground": "#3a3f4a",
-      "editorLineNumber.activeForeground": "#8b909a",
-      "editor.lineHighlightBackground": "#14171d",
-      "editorGutter.background": "#0f1116",
-      "editorIndentGuide.background1": "#1a1e26",
-      "editorWidget.background": "#14171d",
-      "editorWidget.border": "#242832",
+      "editor.background": "#0d0f13",
+      "editor.foreground": "#edeef1",
+      "editorCursor.foreground": "#ccd2de",
+      "editorLineNumber.foreground": "#363b44",
+      "editorLineNumber.activeForeground": "#868c96",
+      "editor.lineHighlightBackground": "#131519",
+      "editor.selectionBackground": "#2a2e36",
+      "editor.inactiveSelectionBackground": "#1f232a",
+      "editorGutter.background": "#0d0f13",
+      "editorIndentGuide.background1": "#191c22",
+      "editorIndentGuide.activeBackground1": "#22252c",
+      "editorWidget.background": "#131519",
+      "editorWidget.border": "#22252c",
+      "editorSuggestWidget.selectedBackground": "#22252c",
+      // Bracket matching stays, as a hairline rather than a fill.
+      "editorBracketMatch.background": "#00000000",
+      "editorBracketMatch.border": "#4a505b",
+      // Every nesting depth gets the same grey as any other delimiter. The
+      // editor option above asks for this too, but the colours are what the
+      // renderer actually reads, so they are set here as well.
+      "editorBracketHighlight.foreground1": "#868c96",
+      "editorBracketHighlight.foreground2": "#868c96",
+      "editorBracketHighlight.foreground3": "#868c96",
+      "editorBracketHighlight.foreground4": "#868c96",
+      "editorBracketHighlight.foreground5": "#868c96",
+      "editorBracketHighlight.foreground6": "#868c96",
+      "editorBracketHighlight.unexpectedBracket.foreground": "#e0736f",
+      "scrollbarSlider.background": "#ffffff14",
+      "scrollbarSlider.hoverBackground": "#ffffff24",
+      "scrollbarSlider.activeBackground": "#ffffff2e",
     },
   });
 }
@@ -107,6 +156,10 @@ export function CodePane({ value, onChange, language, readOnly }: Props) {
           scrollBeyondLastLine: false,
           padding: { top: 12, bottom: 12 },
           renderLineHighlight: "none",
+          // Monaco tints nested bracket pairs from its own rainbow, which is
+          // independent of the token theme and was the last colour left in the
+          // editor. Nesting depth is not what this tool is here to show.
+          bracketPairColorization: { enabled: false },
           smoothScrolling: true,
           automaticLayout: true,
           overviewRulerLanes: 0,

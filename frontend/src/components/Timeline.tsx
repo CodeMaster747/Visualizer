@@ -60,10 +60,12 @@ export function Timeline() {
         togglePlay();
       } else if (e.code === "ArrowRight") {
         e.preventDefault();
-        e.shiftKey ? jumpToNextChange() : stepForward();
+        if (e.shiftKey) jumpToNextChange();
+        else stepForward();
       } else if (e.code === "ArrowLeft") {
         e.preventDefault();
-        e.shiftKey ? jumpToPrevChange() : stepBack();
+        if (e.shiftKey) jumpToPrevChange();
+        else stepBack();
       } else if (e.code === "Home") {
         goTo(0);
       } else if (e.code === "End") {
@@ -90,9 +92,9 @@ export function Timeline() {
           onClick={togglePlay}
           disabled={count === 0}
           title="Play / pause (Space)"
-          className="mx-0.5 flex h-8 w-9 items-center justify-center rounded-lg bg-accent
-                     text-white transition-[filter] duration-150 hover:brightness-110
-                     disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100"
+          className="mx-1 flex h-8 w-9 items-center justify-center rounded-lg bg-accent
+                     text-on-accent transition-colors duration-150 hover:bg-ink
+                     disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent"
         >
           <Icon name={playing ? "pause" : "play"} size={14} filled />
         </button>
@@ -141,8 +143,8 @@ export function Timeline() {
       </Select>
 
       {followVar && (
-        <div className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-changed/40
-                        bg-changed-soft/40 pl-2.5 pr-1">
+        <div className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-changed/25
+                        bg-changed-soft pl-2.5 pr-1">
           <Icon name="diamond" size={10} filled className="text-changed" />
           <span className="max-w-[96px] truncate font-mono text-[11px] text-changed">
             {followVar}

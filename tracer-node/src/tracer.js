@@ -76,6 +76,9 @@ export async function trace({ source, language = "javascript", stdin = "", limit
   child.stdin.end();
 
   const exited = new Promise((resolve) => child.on("exit", resolve));
+  // "exit" can arrive with the last of stderr still in flight, and stderr is
+  // where a parse error is reported. "close" is the event that means drained.
+  const drained = new Promise((resolve) => child.on("close", resolve));
   let finished = false;
   exited.then(() => { finished = true; });
 
@@ -98,15 +101,32 @@ export async function trace({ source, language = "javascript", stdin = "", limit
     const cdp = await Cdp.connect(wsUrl, CONNECT_TIMEOUT_MS);
     const run = await stepThrough({ cdp, child, exited, program, limits, deadline });
     cdp.close();
+    // A run with no steps may still have something to say. Node holds a failing
+    // module's report back until the inspector lets go ("Waiting for the
+    // debugger to disconnect"), so killing here would destroy the only account
+    // of why nothing ran. A run that did produce steps is killed at once, as
+    // before -- that is what stops a runaway loop.
+    if (run.steps.length === 0) {
+      await Promise.race([drained, new Promise((r) => setTimeout(r, 1500))]);
+    }
     kill();
     await exited;
 
+    // A snippet that never parsed leaves no steps behind, whether the debugger
+    // broke inside the loader (CommonJS) or never stopped at all (ESM, which
+    // fails while linking, before any frame exists). Either way Node's own
+    // report on stderr is the only account of what went wrong, and calling that
+    // a successful run of nothing would be the worst answer available.
+    const unparsed = run.steps.length === 0
+      ? parseFailure(collected.stderr, dir, program.lineMap)
+      : null;
+
     return document({
       source, language, limits, started,
-      status: run.status,
+      status: unparsed ? "compile_error" : run.status,
       steps: run.steps,
       stdout: clean(collected.stdout, dir),
-      error: run.error,
+      error: unparsed ?? run.error,
     });
   } finally {
     clearTimeout(guard);
@@ -201,6 +221,18 @@ async function stepThrough({ cdp, child, exited, program, limits, deadline }) {
 
   const scriptId = first.callFrames[0].location.scriptId;
   const url = scripts.get(scriptId) ?? "";
+
+  // --inspect-brk normally stops on the snippet's first line. It stops somewhere
+  // else in exactly one case: the snippet did not parse, so it was never entered
+  // and what breaks instead is the SyntaxError being thrown inside Node's module
+  // loader. Those are not the user's frames, and adopting their scriptId here
+  // would report the loader's line numbers and internal function names as if
+  // they were the snippet's. Hand it back to the stderr parser, which reads the
+  // line out of Node's own report.
+  if (!url.endsWith(program.filename)) {
+    await cdp.send("Debugger.resume");
+    return { status: "compile_error", steps: [], error: null, unparsed: true };
+  }
 
   await cdp.send("Runtime.evaluate", {
     expression: bootstrapSource(limits),
@@ -472,14 +504,33 @@ function mapLine(line, lineMap) {
  * before anything is returned.
  */
 function syntaxError(stderr, dir, lineMap) {
+  const found = parseFailure(stderr, dir, lineMap);
+  if (found) return found;
+  const text = clean(stderr, dir);
+  return {
+    type: "SyntaxError",
+    message: text.trim().split("\n")[0] || "The snippet could not be parsed.",
+  };
+}
+
+/**
+ * Node's report for a snippet that never parsed, or null if stderr holds no
+ * such thing.
+ *
+ * A snippet can fail to parse without the debugger ever stopping in it, so
+ * "no steps" alone cannot be read as "the program did nothing" -- the parse
+ * error may be the only evidence anything happened, and it lives here.
+ */
+function parseFailure(stderr, dir, lineMap) {
   const text = clean(stderr, dir);
   const match = text.match(/^(\w*(?:Error|Exception)): (.*)$/m);
   const located = text.match(/^\S*main\.m?js:(\d+)/m);
-  const rawLine = located ? Number(located[1]) : undefined;
+  if (!match || !located) return null;
+  const rawLine = Number(located[1]);
   return {
-    type: match ? match[1] : "SyntaxError",
-    message: match ? match[2] : (text.trim().split("\n")[0] || "The snippet could not be parsed."),
-    line: rawLine === undefined ? undefined : (mapLine(rawLine, lineMap) ?? rawLine),
+    type: match[1],
+    message: match[2],
+    line: mapLine(rawLine, lineMap) ?? rawLine,
   };
 }
 
