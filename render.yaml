@@ -17,6 +17,13 @@ services:
     dockerContext: .
     healthCheckPath: /api/health
     envVars:
+      # Declare the port rather than leaving Render to scan for it. Render pins
+      # the first port it detects, and an earlier revision of this service
+      # exposed the backend on 8080 -- so it kept probing
+      # <service>:8080/api/health and failing the deploy long after the backend
+      # moved to loopback. Caddy is the only public listener and it is here.
+      - key: PORT
+        value: "10000"
       # Set in the Render dashboard; never commit the key.
       - key: GROQ_API_KEY
         sync: false

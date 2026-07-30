@@ -12,6 +12,15 @@
 }
 
 :{$PORT:10000} {
+	# The tcp4/ prefix is load-bearing. Render requires a listener on 0.0.0.0 and
+	# reports "No open ports detected on 0.0.0.0" without one. Neither `:port`
+	# nor `bind 0.0.0.0` produces one: Go turns any *wildcard* listen address
+	# into a dual-stack AF_INET6 socket, so it appears as [::] in the IPv6 table
+	# and never as 0.0.0.0 in the IPv4 one. It still answers IPv4-mapped
+	# connections, which is why curl succeeds locally while Render's scan fails.
+	# tcp4/ forces net.Listen("tcp4", ...) and a genuine AF_INET socket.
+	bind tcp4/0.0.0.0
+
 	encode gzip zstd
 
 	handle /api/* {
