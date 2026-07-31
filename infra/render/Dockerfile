@@ -47,7 +47,18 @@ FROM python:3.13-slim-bookworm
 # is happy on the same one.
 COPY --from=jars /opt/java/openjdk /opt/java/openjdk
 COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=caddy:2-alpine /usr/bin/caddy /usr/bin/caddy
+
+# The official caddy binary ships with cap_net_bind_service=ep so it can bind
+# :80 as a non-root user. That file capability makes exec fail with EPERM on any
+# runtime that drops the capability from the bounding set -- which is how Render
+# runs containers, and why caddy died there with "couldn't exec caddy: EPERM"
+# while starting fine under a stock Docker daemon. Nothing here needs it: caddy
+# listens on $PORT (10000), well above 1024. Copying through `cat` writes a
+# fresh inode and leaves the security.capability xattr behind.
+COPY --from=caddy:2-alpine /usr/bin/caddy /usr/bin/caddy.setcap
+RUN cat /usr/bin/caddy.setcap > /usr/bin/caddy \
+ && rm /usr/bin/caddy.setcap \
+ && chmod 0755 /usr/bin/caddy
 ENV JAVA_HOME=/opt/java/openjdk \
     PATH="/opt/java/openjdk/bin:${PATH}"
 
