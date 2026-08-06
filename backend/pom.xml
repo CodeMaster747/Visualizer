@@ -25,7 +25,25 @@
              Spring Boot 3.5.x supports 17-25, so bump this once a newer JDK is
              on the build and deploy hosts. -->
         <java.version>21</java.version>
+        <azure-sdk-bom.version>1.2.35</azure-sdk-bom.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- The Azure SDK ships one BOM covering every client library, and
+                 its whole job is to pin a set of versions that share a compatible
+                 azure-core. Declaring azure-storage-blob without a version is
+                 therefore deliberate: picking versions per-artifact is how you
+                 end up with two azure-core lines on the classpath. -->
+            <dependency>
+                <groupId>com.azure</groupId>
+                <artifactId>azure-sdk-bom</artifactId>
+                <version>${azure-sdk-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -45,9 +63,31 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Validates Entra External ID access tokens. This starter is inert
+             until an issuer URI is configured (see SecurityConfig): on a build
+             with no Azure tenant the filter chain permits everything, which is
+             what keeps local development and the test suite unauthenticated. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <!-- Durable tier of the trace cache. Caffeine still fronts it, so a blob
+             is read only on a process-local miss and this client sits idle on
+             the hot path. Version comes from azure-sdk-bom above. -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

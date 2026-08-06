@@ -18,6 +18,13 @@ services:
   caddy:
     build:
       context: ./frontend
+      # Compiled into the bundle, not read at runtime: Vite resolves
+      # import.meta.env at build time. Changing any of these needs a rebuild
+      # (`docker compose build caddy`), not just a restart.
+      args:
+        VITE_AZURE_CLIENT_ID: ${VITE_AZURE_CLIENT_ID:-}
+        VITE_AZURE_AUTHORITY: ${VITE_AZURE_AUTHORITY:-}
+        VITE_AZURE_API_SCOPE: ${VITE_AZURE_API_SCOPE:-}
     restart: unless-stopped
     ports:
       - "80:80"
@@ -45,6 +52,14 @@ services:
       # Optional: enables LLM narration when set. Left empty -> narration off.
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      # Optional: durable trace storage. Empty -> in-memory cache only, and a
+      # shared link stops resolving when this container restarts.
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-traces}
+      # Optional: require an Entra External ID token on /api/**. Empty -> open,
+      # which is the right default for a stack running on your own machine.
+      VISUALIZER_AZURE_AUTH_ISSUER_URI: ${VISUALIZER_AZURE_AUTH_ISSUER_URI:-}
+      VISUALIZER_AZURE_AUTH_AUDIENCE: ${VISUALIZER_AZURE_AUTH_AUDIENCE:-}
     depends_on:
       - tracer-python
       - tracer-java

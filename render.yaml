@@ -29,3 +29,31 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
+
+      # --- Azure, all optional -------------------------------------------
+      # Every one of these is `sync: false`, so the service deploys and runs
+      # with them unset -- which is exactly the deployment that exists today.
+      # Fill them in the dashboard to switch each feature on. See
+      # infra/azure/README.md for where each value comes from.
+      #
+      # Durable trace storage. Without it this free instance loses every trace
+      # each time it spins down, which it does after 15 minutes idle.
+      - key: AZURE_STORAGE_CONNECTION_STRING
+        sync: false
+      - key: AZURE_STORAGE_CONTAINER
+        value: traces
+      # Entra External ID, backend half: which tokens /api/** will accept.
+      - key: VISUALIZER_AZURE_AUTH_ISSUER_URI
+        sync: false
+      - key: VISUALIZER_AZURE_AUTH_AUDIENCE
+        sync: false
+      # Entra External ID, frontend half. Render passes service environment
+      # variables to `docker build` as build args, which is the only way these
+      # can work: Vite inlines them at compile time, so changing one requires a
+      # fresh deploy rather than a restart.
+      - key: VITE_AZURE_CLIENT_ID
+        sync: false
+      - key: VITE_AZURE_AUTHORITY
+        sync: false
+      - key: VITE_AZURE_API_SCOPE
+        sync: false

@@ -175,6 +175,27 @@ one call per step. It is:
   transient outage must not permanently disable narration for a trace);
 - **fail-soft** — no key, a timeout, or junk output just leaves the strip empty.
 
+### Azure (optional)
+
+Two integrations, each independently switched on by configuration and each
+degrading to the previous behaviour when absent — see
+[`infra/azure/README.md`](infra/azure/README.md) for setup.
+
+- **Blob Storage** is a durable tier *behind* the Caffeine cache, not a
+  replacement for it. The SHA-256 that already keys the cache becomes the blob
+  name, so writes are idempotent and uploads are create-only (`If-None-Match:
+  *`) — a re-run of the same snippet costs no write. What it buys is share
+  links that survive a restart, which on a free instance that sleeps after 15
+  minutes idle is the difference between a link working and not. Archive
+  failures degrade to a cache miss and can never fail a run.
+- **Entra External ID** replaces the local-profile sign-in with OIDC
+  (authorization code + PKCE in the browser, JWT validation in Spring Security,
+  audience checked as well as issuer). Rate limiting then keys on the token
+  subject rather than the IP, so people behind one NAT stop sharing a bucket.
+
+With neither configured the app is exactly what it was before: local sign-in,
+in-memory cache, no Azure code path reached, full test suite green.
+
 ### Sandboxing
 
 Traced code executes in the tracer's own process, so that process is treated as

@@ -27,7 +27,8 @@ class NarrationServiceTest {
         return new AppProperties(
                 new AppProperties.Tracers(Map.of("python", "http://localhost:8081")),
                 new AppProperties.Groq(apiKey, "http://groq", "model", 45, 25),
-                new AppProperties.RateLimit(20, 8));
+                new AppProperties.RateLimit(20, 8),
+                AppProperties.Azure.disabled());
     }
 
     private NarrationService service(GroqClient groq, String apiKey) {

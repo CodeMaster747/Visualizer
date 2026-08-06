@@ -11,11 +11,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Per-IP rate limiting for the run endpoints.
+ * Rate limiting for the expensive endpoints, keyed per caller.
  *
  * This is not optional on a free-tier box that executes arbitrary code: without
  * it a single client can pin the CPU with a stream of expensive traces. A
@@ -23,7 +26,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * multi-instance upgrade is Bucket4j backed by Redis, sharing one counter across
  * replicas.
  *
- * Only mutating run/narrate calls are limited; health and GETs pass freely.
+ * "Per caller" means the signed-in user where there is one, and the IP otherwise
+ * -- see {@link #rateLimitKey}. Limited endpoints are the two that cost real
+ * money or CPU (running code, calling an LLM) plus trace lookup, which is cheap
+ * per call but reaches a metered storage account on a miss.
  */
 @Component
 @Order(1)
@@ -48,16 +54,25 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        // Only the expensive, mutating endpoints are limited.
-        return !("POST".equals(request.getMethod())
-                && (path.equals("/api/trace") || path.equals("/api/narrate")));
+        String method = request.getMethod();
+
+        if ("POST".equals(method)) {
+            return !(path.equals("/api/trace") || path.equals("/api/narrate"));
+        }
+        // Reading a shared trace is cheap here but bills a transaction against
+        // the storage account on a local miss, so it is limited too -- generously,
+        // since it never executes anything.
+        if ("GET".equals(method)) {
+            return !path.startsWith("/api/trace/");
+        }
+        return true;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        String ip = clientIp(request);
-        TokenBucket bucket = buckets.get(ip, k -> new TokenBucket(capacity, refillPerSecond));
+        String key = rateLimitKey(request);
+        TokenBucket bucket = buckets.get(key, k -> new TokenBucket(capacity, refillPerSecond));
 
         if (bucket.tryConsume()) {
             chain.doFilter(request, response);
@@ -67,6 +82,37 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.getWriter().write(
                     "{\"error\":\"rate_limited\",\"message\":\"Too many runs. Please wait a moment.\"}");
         }
+    }
+
+    /**
+     * Who this request is charged to: the authenticated user if there is one,
+     * otherwise the client IP.
+     *
+     * Preferring the token subject fixes a real unfairness in IP-only limiting.
+     * A university lab, an office, or anyone behind CGNAT presents one address
+     * for many people, so a single busy user throttles a whole building; the
+     * reverse also holds, since one person on a phone can rotate addresses to
+     * shed a bucket. A subject is neither shared nor cheap to rotate -- getting
+     * a second one means completing a second sign-up against the identity
+     * provider, which is exactly the cost we want an abuser to pay.
+     *
+     * Anonymous callers keep the old IP behaviour, so this is strictly an
+     * improvement for signed-in users rather than a new barrier. The prefixes
+     * keep the two namespaces from ever colliding.
+     *
+     * <p>Ordering matters here: Spring Security's chain is registered at order
+     * -100 and this filter at 1, so the security context is already populated by
+     * the time we look.
+     */
+    String rateLimitKey(HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwt) {
+            String subject = jwt.getToken().getSubject();
+            if (subject != null && !subject.isBlank()) {
+                return "sub:" + subject;
+            }
+        }
+        return "ip:" + clientIp(request);
     }
 
     /**

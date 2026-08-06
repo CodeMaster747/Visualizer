@@ -18,6 +18,19 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+
+# Vite inlines import.meta.env at compile time, so Entra config has to arrive as
+# build args rather than runtime environment. Render passes a service's
+# environment variables to `docker build` as build args, so declaring them here
+# is all that is needed; unset, the SPA uses local-profile sign-in. See
+# infra/azure/README.md.
+ARG VITE_AZURE_CLIENT_ID=""
+ARG VITE_AZURE_AUTHORITY=""
+ARG VITE_AZURE_API_SCOPE=""
+ENV VITE_AZURE_CLIENT_ID=$VITE_AZURE_CLIENT_ID \
+    VITE_AZURE_AUTHORITY=$VITE_AZURE_AUTHORITY \
+    VITE_AZURE_API_SCOPE=$VITE_AZURE_API_SCOPE
+
 RUN npm run build
 
 # --- tracer-node's runtime dependencies ------------------------------------

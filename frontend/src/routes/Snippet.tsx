@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { CodePane } from "../components/CodePane";
 import { HeapGraph } from "../components/HeapGraph";
@@ -21,7 +21,7 @@ import { Segmented, Select } from "../components/ui/Controls";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Icon } from "../components/ui/Icon";
 import { Panel } from "../components/ui/Panel";
-import { ApiError, fetchNarration, fetchServerInfo, runSnippet } from "../lib/api";
+import { ApiError, fetchNarration, fetchServerInfo, fetchTraceById, runSnippet } from "../lib/api";
 import { EXAMPLES } from "../lib/examples";
 import { LANGUAGES } from "../lib/languages";
 import { usePlayback } from "../store/playback";
@@ -38,12 +38,20 @@ interface RestoreState {
   files: { name: string; content: string }[];
 }
 
+/** How long the share button stays in its "Copied" state before reverting. */
+const COPIED_FEEDBACK_MS = 1600;
+
 export function Snippet() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [narrating, setNarrating] = useState(false);
   const [packages, setPackages] = useState<Record<string, string[]>>({});
   const [languages, setLanguages] = useState<Record<string, boolean>>({ python: true });
+
+  // The server's id for the trace on screen. Present only after a run that the
+  // backend acknowledged, which is exactly when a link to it would resolve.
+  const [traceId, setTraceId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const {
     language, exampleId, source, files,
@@ -63,6 +71,7 @@ export function Snippet() {
   const record = useRecents((s) => s.record);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Preferences seed the workspace once per page load. Read imperatively:
   // changing the default language later must not yank the code you are editing.
@@ -92,24 +101,86 @@ export function Snippet() {
     });
   }, []);
 
+  // Opened from a shared link: `?t=<id>` names a trace someone already ran.
+  //
+  // The trace arrives without its source, because the id is a hash of the source
+  // rather than a container for it -- so the replay is complete and the editor
+  // is not. That is the honest outcome of content-addressing and better than the
+  // alternative of putting somebody's code in a URL.
+  const sharedId = searchParams.get("t");
+  useEffect(() => {
+    if (!sharedId) return;
+    let cancelled = false;
+
+    setRunning(true);
+    fetchTraceById(sharedId)
+      .then((doc) => {
+        if (cancelled) return;
+        if (!doc) {
+          setError(
+            "That shared trace is no longer available. It may have expired — run the code to build a new one.",
+          );
+          return;
+        }
+        loadTrace(doc);
+        setTraceId(sharedId);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Something went wrong.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRunning(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sharedId, loadTrace]);
+
+  // Reverting the label is cosmetic, so it is fine to lose on unmount.
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const share = async () => {
+    if (!traceId) return;
+    const url = `${window.location.origin}/app/snippet?t=${traceId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      // Clipboard access is denied over plain http and in some browsers, so
+      // fall back to putting the link in the address bar where it can at least
+      // be copied by hand.
+      setSearchParams({ t: traceId }, { replace: true });
+    }
+  };
+
   const pick = (id: string) => {
     pickExample(id);
     setError(null);
     clearTrace();
+    setTraceId(null);
   };
 
   const switchLanguage = (lang: Language) => {
     setLanguage(lang);
     setError(null);
     clearTrace();
+    setTraceId(null);
   };
 
   const run = async () => {
     setRunning(true);
     setError(null);
     try {
-      const doc = await runSnippet({ language, source, files });
+      const { doc, id } = await runSnippet({ language, source, files });
       loadTrace(doc);
+      setTraceId(id ?? null);
       record({
         title: titleFor(source),
         language,
@@ -123,6 +194,7 @@ export function Snippet() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
       clearTrace();
+      setTraceId(null);
     } finally {
       setRunning(false);
     }
@@ -198,6 +270,18 @@ export function Snippet() {
             <span className="truncate font-mono text-[11px] text-ink-faint">
               {shownPackages.join(" · ")}
             </span>
+          )}
+          {/* Only offered once the server has given this trace an id, since
+              that id is the entire link. */}
+          {traceId && (
+            <Button
+              onClick={share}
+              title="Copy a link that replays this exact trace"
+              className="shrink-0"
+            >
+              <Icon name={copied ? "check" : "link"} size={13} />
+              {copied ? "Copied" : "Share"}
+            </Button>
           )}
           <Button
             variant="primary"

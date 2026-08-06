@@ -6,6 +6,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -68,5 +69,33 @@ class ApiIntegrationTest {
                         .content("{\"language\":\"python\",\"source\":\"x=1\",\"steps\":[]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notes").isEmpty());
+    }
+
+    @Test
+    void unknownShareLinkIsNotFound() throws Exception {
+        mvc.perform(get("/api/trace/" + "a".repeat(64)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void malformedShareLinkIsAlsoJustNotFound() throws Exception {
+        // Same answer as an unknown id on purpose. The id is a hash of the
+        // source, so telling callers apart would let one probe for whose code
+        // has been run here.
+        mvc.perform(get("/api/trace/not-a-hash"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void apiIsOpenWhileNoEntraTenantIsConfigured() throws Exception {
+        // The test context sets no issuer, so the security chain must permit
+        // everything -- a 401 here would mean the unauthenticated deployments
+        // (laptop, docker compose, Render) had just been broken.
+        mvc.perform(get("/api/health")).andExpect(status().isOk());
+        mvc.perform(post("/api/trace")
+                        .contentType("application/json")
+                        .content("{\"language\":\"python\",\"source\":\"x=1\"}"))
+                .andExpect(status().is(not(401)))
+                .andExpect(status().is(not(403)));
     }
 }

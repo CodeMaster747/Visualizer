@@ -34,6 +34,20 @@ visualizer:
   rate-limit:
     runs-per-minute: 20
     burst: 8
+  azure:
+    storage:
+      # Empty by default -> traces are cached in memory only, exactly as before
+      # Azure existed, and a shared link stops resolving when the process
+      # restarts. Set it and traces become durable. Carries the account key, so
+      # it only ever comes from the environment.
+      connection-string: ${AZURE_STORAGE_CONNECTION_STRING:}
+      container: ${AZURE_STORAGE_CONTAINER:traces}
+    auth:
+      # Empty by default -> the API is unauthenticated, which is what keeps
+      # local development and the test suite working without a tenant. Set both
+      # to require an Entra External ID token on /api/**.
+      issuer-uri: ${VISUALIZER_AZURE_AUTH_ISSUER_URI:}
+      audience: ${VISUALIZER_AZURE_AUTH_AUDIENCE:}
 
 management:
   endpoints:
