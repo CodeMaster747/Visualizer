@@ -5,6 +5,15 @@
  * plus emoji glyphs where the package came up short -- is how icon sets drift
  * into three optical weights and four sizes. Everything here is 24x24,
  * stroke 1.5, currentColor, so an icon always matches the text beside it.
+ *
+ * Four rendered sizes, chosen by the type an icon sits next to rather than by
+ * eye. There were eight before (10, 12, 13, 14, 15, 16, 17, 18), which is what
+ * a set looks like when each call site picks the number that felt right:
+ *
+ *     12   beside 2xs/xs text (10-11px)
+ *     14   beside sm/base text (12-13px), and in toolbars
+ *     16   navigation, and the default
+ *     18   standalone glyphs: feature marks, empty states
  */
 
 import type { SVGProps } from "react";

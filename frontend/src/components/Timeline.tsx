@@ -14,7 +14,7 @@ import { SPEEDS, usePlayback, type Speed } from "../store/playback";
 import { changePointsFor } from "../lib/diff";
 
 function Btn({
-  onClick, disabled, title, icon, size = 15,
+  onClick, disabled, title, icon, size = 16,
 }: {
   onClick: () => void;
   disabled?: boolean;
@@ -27,9 +27,9 @@ function Btn({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim
+      className="flex h-control-sm w-control-sm items-center justify-center rounded-lg text-ink-dim
                  transition-colors duration-150 hover:bg-surface-2 hover:text-ink
-                 disabled:cursor-not-allowed disabled:opacity-30
+                 active:bg-surface-3 disabled:cursor-not-allowed disabled:opacity-30
                  disabled:hover:bg-transparent disabled:hover:text-ink-dim"
     >
       <Icon name={icon} size={size} filled />
@@ -84,21 +84,22 @@ export function Timeline() {
   const progress = count > 1 ? (stepIndex / (count - 1)) * 100 : 0;
 
   return (
-    <div className="flex h-14 shrink-0 items-center gap-4 border-t border-border bg-surface px-4">
+    <div className="flex h-bar shrink-0 items-center gap-4 border-t border-border bg-surface px-4">
       <div className="flex items-center gap-0.5">
         <Btn onClick={() => goTo(0)} disabled={atStart} title="Start (Home)" icon="skipStart" />
-        <Btn onClick={stepBack} disabled={atStart} title="Back (←)" icon="stepBack" size={13} />
+        <Btn onClick={stepBack} disabled={atStart} title="Back (←)" icon="stepBack" size={14} />
         <button
           onClick={togglePlay}
           disabled={count === 0}
           title="Play / pause (Space)"
-          className="mx-1 flex h-8 w-9 items-center justify-center rounded-lg bg-accent
+          className="mx-1 flex h-control-sm w-9 items-center justify-center rounded-lg bg-accent
                      text-on-accent transition-colors duration-150 hover:bg-ink
-                     disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent"
+                     active:bg-accent disabled:cursor-not-allowed disabled:opacity-40
+                     disabled:hover:bg-accent"
         >
           <Icon name={playing ? "pause" : "play"} size={14} filled />
         </button>
-        <Btn onClick={stepForward} disabled={atEnd} title="Forward (→)" icon="stepForward" size={13} />
+        <Btn onClick={stepForward} disabled={atEnd} title="Forward (→)" icon="stepForward" size={14} />
         <Btn onClick={() => goTo(count - 1)} disabled={atEnd} title="End (End)" icon="skipEnd" />
       </div>
 
@@ -125,7 +126,7 @@ export function Timeline() {
         )}
       </div>
 
-      <span className="tnum w-20 shrink-0 text-right font-mono text-[11px] text-ink-dim">
+      <span className="tnum w-20 shrink-0 text-right font-mono text-xs text-ink-dim">
         {count === 0 ? "—" : `${stepIndex + 1} / ${count}`}
       </span>
 
@@ -133,6 +134,7 @@ export function Timeline() {
         value={speed}
         onChange={(e) => setSpeed(Number(e.target.value) as Speed)}
         title="Playback speed"
+        size="sm"
         className="w-[76px] font-mono"
       >
         {SPEEDS.map((s) => (
@@ -143,27 +145,27 @@ export function Timeline() {
       </Select>
 
       {followVar && (
-        <div className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-changed/25
+        <div className="flex h-control-sm shrink-0 items-center gap-1 rounded-lg border border-changed/25
                         bg-changed-soft pl-2.5 pr-1">
-          <Icon name="diamond" size={10} filled className="text-changed" />
-          <span className="max-w-[96px] truncate font-mono text-[11px] text-changed">
+          <Icon name="diamond" size={12} filled className="text-changed" />
+          <span className="max-w-[96px] truncate font-mono text-xs text-changed">
             {followVar}
           </span>
           <button
             onClick={jumpToPrevChange}
             title="Previous change (Shift+←)"
             className="flex h-6 w-6 items-center justify-center rounded-md text-changed
-                       transition-colors duration-150 hover:bg-changed/15"
+                       transition-colors duration-150 hover:bg-changed/15 active:bg-changed/25"
           >
-            <Icon name="chevronLeft" size={13} />
+            <Icon name="chevronLeft" size={14} />
           </button>
           <button
             onClick={jumpToNextChange}
             title="Next change (Shift+→)"
             className="flex h-6 w-6 items-center justify-center rounded-md text-changed
-                       transition-colors duration-150 hover:bg-changed/15"
+                       transition-colors duration-150 hover:bg-changed/15 active:bg-changed/25"
           >
-            <Icon name="chevronRight" size={13} />
+            <Icon name="chevronRight" size={14} />
           </button>
         </div>
       )}

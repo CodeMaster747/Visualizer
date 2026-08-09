@@ -18,7 +18,7 @@ export function StackPane() {
 
   if (!step) {
     return (
-      <div className="flex h-full items-center justify-center text-[12px] text-ink-faint">
+      <div className="flex h-full items-center justify-center text-sm text-ink-faint">
         No frames
       </div>
     );
@@ -52,16 +52,16 @@ export function StackPane() {
                   isActive ? "bg-accent-soft" : "bg-surface-2"
                 }`}
               >
-                <span className="truncate font-mono text-[11px] font-medium text-ink">
+                <span className="truncate font-mono text-xs font-medium text-ink">
                   {frame.is_global ? "global" : `${frame.name}()`}
                 </span>
-                <span className="tnum shrink-0 font-mono text-[10px] text-ink-faint">
+                <span className="tnum shrink-0 font-mono text-2xs text-ink-faint">
                   line {frame.line}
                 </span>
               </div>
 
               {locals.length === 0 ? (
-                <div className="px-3 py-2 text-[11px] italic text-ink-faint">
+                <div className="px-3 py-2 text-xs italic text-ink-faint">
                   no variables yet
                 </div>
               ) : (
@@ -77,12 +77,13 @@ export function StackPane() {
                           key={name}
                           onClick={() => setFollowVar(followed ? null : name)}
                           className={`cursor-pointer border-t border-border-soft transition-colors
-                                      duration-150 hover:bg-surface-2 ${followed ? "bg-surface-2" : ""}`}
+                                      duration-150 hover:bg-surface-2 active:bg-surface-3
+                                      ${followed ? "bg-surface-2" : ""}`}
                           title="Click to follow this variable"
                         >
                           <td className="w-px py-1.5 pl-3 pr-4">
                             <span
-                              className={`whitespace-nowrap font-mono text-[11px] ${
+                              className={`whitespace-nowrap font-mono text-xs ${
                                 followed ? "text-accent" : "text-ink-dim"
                               }`}
                             >
@@ -108,7 +109,7 @@ export function StackPane() {
               {isActive && step.event === "return" && step.returned && (
                 <div className="flex h-8 items-center justify-between gap-2 border-t border-border-soft
                                 bg-fresh-soft px-3">
-                  <span className="font-mono text-[11px] text-fresh">returns</span>
+                  <span className="font-mono text-xs text-fresh">returns</span>
                   <ValueChip value={step.returned} heap={step.heap} changed />
                 </div>
               )}

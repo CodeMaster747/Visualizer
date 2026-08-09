@@ -13,6 +13,11 @@ in memory, and no Azure SDK code path is reached. That is a supported
 configuration, not a degraded one — `docker compose up`, `mvn test` and a laptop
 with no Azure account all depend on it. Turn them on one at a time.
 
+**Setting this up on a new subscription?** [`provision.sh`](provision.sh) does
+the mechanical parts, and [`MIGRATION.md`](MIGRATION.md) is the step-by-step
+runbook for moving from an expiring subscription to a fresh one. This document
+explains what each piece is and why; that one is the sequence to follow.
+
 ---
 
 ## Cost
@@ -36,9 +41,11 @@ Set a **budget alert** at $1 on the subscription anyway. It costs nothing and it
 is the difference between noticing a mistake in a day and noticing it in a month.
 
 ```bash
+# Lowercase enums are required; the CLI rejects Monthly/Cost. macOS date flags --
+# on Linux use $(date -d '+1 year' +%Y-%m-01) for the end date.
 az consumption budget create --budget-name visualizer-guard \
-  --amount 1 --time-grain Monthly --category Cost \
-  --start-date $(date +%Y-%m-01) --end-date $(date -v+1y +%Y-%m-01)
+  --amount 1 --time-grain monthly --category cost \
+  --start-date "$(date +%Y-%m-01)" --end-date "$(date -v+1y +%Y-%m-01)"
 ```
 
 ### On Azure for Students
@@ -59,6 +66,49 @@ Two things to know, because both end with a dead demo link rather than a warning
 At this project's scale the storage integration will consume cents of the $100,
 so the credit is not the constraint. **Tenant creation permission is** — see the
 pre-flight check in Part 2.
+
+### When the student offer ends
+
+Renewal requires re-verifying enrolment through an institutional email address at
+each renewal point. After graduation that check fails — an alumni address
+generally does not qualify — so **the offer ends permanently rather than
+lapsing temporarily**. The only continuation path is upgrading to pay-as-you-go,
+which is done by contacting Azure support rather than through a button.
+
+Find the date this becomes urgent, and put it in a calendar now:
+[microsoftazuresponsorships.com/balance](https://www.microsoftazuresponsorships.com/balance)
+shows remaining credit and the expiration date. Decide *before* that date —
+once the subscription is disabled, reactivating it means a support request.
+
+Two options, both legitimate:
+
+**Upgrade to pay-as-you-go.** Needs a card. Ongoing cost for this project is
+well under a dollar a month: External ID stays inside its free MAU tier
+indefinitely, and a few megabytes of trace blobs bills fractions of a cent once
+the 12-month storage grant ends (that grant runs from your original sign-up
+date, so upgrading does not extend it). Choose this if you want the live demo to
+keep showing sign-in.
+
+**Let it lapse and fall back.** The app is built to run with no Azure at all, so
+the deployment keeps working — local-profile sign-in, in-memory cache, no
+errors. You lose durable share links, and the integration lives on in the code
+and in this document, which is what a reviewer actually reads. Costs nothing.
+
+> **If you let it lapse, unset the auth variables. This part is not symmetric.**
+>
+> Storage failing is safe by design: the archive degrades to a cache miss and a
+> run still succeeds. **Authentication failing is not.** With
+> `VISUALIZER_AZURE_AUTH_ISSUER_URI` still set but the tenant gone, token
+> validation fails and every `/api/**` call returns 401 — behind a sign-in
+> button that can no longer complete. `/api/health` stays public, so the
+> platform health check goes on passing and nothing alerts you. The app is
+> bricked and looks fine.
+>
+> Clear `VISUALIZER_AZURE_AUTH_ISSUER_URI`, `VISUALIZER_AZURE_AUTH_AUDIENCE` and
+> the three `VITE_AZURE_*` values, then redeploy. The `VITE_` ones are compiled
+> into the bundle, so this needs a rebuild — on Render, changing an environment
+> variable triggers one automatically. `AZURE_STORAGE_CONNECTION_STRING` is safe
+> to leave set, though clearing it saves a pointless failing call per cache miss.
 
 ---
 

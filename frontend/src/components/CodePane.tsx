@@ -32,7 +32,11 @@ function defineTheme(monaco: Monaco) {
     inherit: false,
     rules: [
       { token: "", foreground: "b6bac2" },
-      { token: "comment", foreground: "565b64", fontStyle: "italic" },
+      // Tracks the app's tertiary floor: `ink-faint` composites to roughly
+      // #747679 over this background, and a comment materially darker than
+      // that is the one piece of text in the app still failing the contrast
+      // the rest of the palette was raised to meet.
+      { token: "comment", foreground: "6b7079", fontStyle: "italic" },
       { token: "keyword", foreground: "f4f5f7" },
       { token: "keyword.control", foreground: "f4f5f7" },
       { token: "string", foreground: "d2d6dd" },
@@ -58,8 +62,11 @@ function defineTheme(monaco: Monaco) {
       "editor.background": "#0d0f13",
       "editor.foreground": "#edeef1",
       "editorCursor.foreground": "#ccd2de",
-      "editorLineNumber.foreground": "#363b44",
-      "editorLineNumber.activeForeground": "#868c96",
+      // The gutter is the largest run of small text in the app; at #363b44 it
+      // was under 2:1. Inactive sits a step below comments, active a step
+      // above, so the executing line's number is findable at a glance.
+      "editorLineNumber.foreground": "#4f545e",
+      "editorLineNumber.activeForeground": "#a0a5ad",
       "editor.lineHighlightBackground": "#131519",
       "editor.selectionBackground": "#2a2e36",
       "editor.inactiveSelectionBackground": "#1f232a",

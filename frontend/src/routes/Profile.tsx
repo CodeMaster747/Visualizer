@@ -9,20 +9,12 @@
 import { Link } from "react-router-dom";
 
 import { Page } from "../components/shell/Page";
+import { Row } from "../components/ui/Controls";
 import { Icon } from "../components/ui/Icon";
 import { languageName } from "../lib/languages";
 import { useAccount } from "../store/account";
 import { usePrefs } from "../store/prefs";
 import { useRecents } from "../store/recents";
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-8 border-b border-border-soft py-3.5 last:border-b-0">
-      <span className="text-[13px] text-ink-dim">{label}</span>
-      <span className="truncate text-[13px] text-ink">{value}</span>
-    </div>
-  );
-}
 
 export function Profile() {
   const defaultLanguage = usePrefs((s) => s.defaultLanguage);
@@ -34,31 +26,30 @@ export function Profile() {
 
   return (
     <Page title="Profile" subtitle="Who this workspace belongs to." width="narrow">
-      <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-6">
+      <div className="card flex items-center gap-4 p-6">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full
-                         border border-border bg-surface-2 text-[16px] font-medium text-ink-dim">
+                         border border-border bg-surface-2 text-lg font-medium text-ink-dim">
           {account.initials}
         </span>
         <div className="min-w-0">
-          <div className="text-[15px] font-medium text-ink">{account.name}</div>
-          <div className="mt-0.5 truncate text-[13px] text-ink-dim">{account.email}</div>
+          <div className="text-lg font-medium text-ink">{account.name}</div>
+          <div className="mt-1 truncate text-base text-ink-dim">{account.email}</div>
         </div>
       </div>
 
       <section className="mt-8">
-        <h2 className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint">
-          Workspace
-        </h2>
+        <h2 className="eyebrow mb-2 text-ink-faint">Workspace</h2>
         <div className="border-t border-border-soft">
-          <Row label="Plan" value="Local — no account server" />
-          <Row label="Default language" value={languageName(defaultLanguage)} />
-          <Row label="Recent runs stored" value={`${runs.length} of 8`} />
-          <Row label="Storage" value="This browser" />
+          <Row label="Plan">Local — no account server</Row>
+          <Row label="Default language">{languageName(defaultLanguage)}</Row>
+          <Row label="Recent runs stored">{`${runs.length} of 8`}</Row>
+          <Row label="Storage">This browser</Row>
         </div>
       </section>
 
-      <p className="mt-6 flex items-start gap-2 text-[12px] leading-relaxed text-ink-faint">
-        <Icon name="user" size={14} className="mt-px shrink-0" />
+      {/* 14px glyph in an 18px line box: (18 - 14) / 2 = 2. */}
+      <p className="mt-6 flex items-start gap-2 text-sm leading-relaxed text-ink-faint">
+        <Icon name="user" size={14} className="mt-[2px] shrink-0" />
         <span>
           This profile exists only in this browser — there is no account server
           behind it, and no password was ever collected. Preferences and recent

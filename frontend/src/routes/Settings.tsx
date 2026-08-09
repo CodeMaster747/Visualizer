@@ -6,6 +6,7 @@
  */
 
 import { Page } from "../components/shell/Page";
+import { Button } from "../components/ui/Button";
 import { SettingGroup, SettingRow, Select, Toggle } from "../components/ui/Controls";
 import { SPEEDS, type Speed } from "../store/playback";
 import { usePrefs, type Language } from "../store/prefs";
@@ -110,15 +111,9 @@ export function Settings() {
           label="Recent runs"
           description={`${runs.length} snippet${runs.length === 1 ? "" : "s"} stored in this browser.`}
         >
-          <button
-            onClick={clearRecents}
-            disabled={runs.length === 0}
-            className="h-8 rounded-lg border border-border bg-surface-2 px-3 text-[12px] font-medium
-                       text-ink transition-colors duration-150 hover:border-border-strong
-                       hover:bg-surface-3 disabled:cursor-not-allowed disabled:opacity-40"
-          >
+          <Button onClick={clearRecents} disabled={runs.length === 0}>
             Clear
-          </button>
+          </Button>
         </SettingRow>
       </SettingGroup>
     </Page>

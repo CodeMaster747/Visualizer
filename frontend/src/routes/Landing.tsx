@@ -43,7 +43,7 @@ function Hero({ cta }: { cta: { to: string; label: string } }) {
       <Reveal>
         <span
           className="inline-flex items-center gap-2 rounded-full border border-border bg-surface
-                     px-3 py-1 text-[11px] font-medium tracking-[0.02em] text-ink-dim"
+                     px-3 py-1 text-xs font-medium text-ink-dim"
         >
           <Icon name="sparkle" size={12} className="text-ink-faint" />
           Third-party libraries included
@@ -51,16 +51,14 @@ function Hero({ cta }: { cta: { to: string; label: string } }) {
       </Reveal>
 
       <Reveal delay={60}>
-        <h1 className="mt-7 text-[44px] font-semibold leading-[1.05] text-ink sm:text-[64px]">
-          Visualizer
-        </h1>
-        <p className="mt-4 text-[22px] font-medium leading-tight text-ink-dim sm:text-[26px]">
+        <h1 className="mt-8 text-4xl font-semibold text-ink sm:text-5xl">Visualizer</h1>
+        <p className="mt-4 text-xl font-medium text-ink-dim sm:text-2xl">
           Watch code run, step by step.
         </p>
       </Reveal>
 
       <Reveal delay={120}>
-        <p className="mx-auto mt-6 max-w-[58ch] text-[15px] leading-relaxed text-ink-faint">
+        <p className="mx-auto mt-6 max-w-[58ch] text-lg leading-relaxed text-ink-faint">
           Upload a snippet of Python, Java, JavaScript or TypeScript and step
           through it line by line — every variable, object and reference
           animated at the moment it changes, including the ones created inside
@@ -74,22 +72,74 @@ function Hero({ cta }: { cta: { to: string; label: string } }) {
             {cta.label}
             <Icon name="arrowRight" size={16} />
           </Link>
-          <span className="text-[12px] text-ink-faint">
+          <span className="text-sm text-ink-faint">
             No password, no install — your profile stays in this browser.
           </span>
         </div>
       </Reveal>
 
       <Reveal delay={240}>
+        {/* Hairline gaps, not borders: one `bg-border-soft` behind a 1px grid
+            gap draws every divider at once and never doubles at a junction. */}
         <dl className="mt-20 grid gap-px overflow-hidden rounded-xl border border-border
                        bg-border-soft sm:grid-cols-3">
           {STATS.map(([value, label]) => (
-            <div key={value} className="bg-surface px-6 py-7">
-              <dt className="tnum text-[24px] font-semibold leading-none text-ink">{value}</dt>
-              <dd className="mt-2.5 text-[12px] leading-relaxed text-ink-faint">{label}</dd>
+            <div key={value} className="bg-surface px-6 py-8">
+              <dt className="tnum text-2xl font-semibold text-ink">{value}</dt>
+              <dd className="mt-2 text-sm leading-relaxed text-ink-faint">{label}</dd>
             </div>
           ))}
         </dl>
+      </Reveal>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+const STEPS: [title: string, body: string][] = [
+  [
+    "Paste or upload",
+    "Pick Python, Java, JavaScript or TypeScript and load a bundled example or your own file. CSVs and datasets upload alongside and are read by bare filename.",
+  ],
+  [
+    "It runs once, sandboxed",
+    "A fresh process executes the whole program under a tracer and hands back one complete trace document — no streaming, no partial state.",
+  ],
+  [
+    "Scrub the timeline",
+    "Step forward, jump to the failure, or walk backwards from it. Stack, heap and output redraw at every step.",
+  ],
+];
+
+/**
+ * What the product does, before the sections arguing why it does it better.
+ *
+ * Numbered rather than icon-marked like the guarantees below: these are ordered,
+ * and three glyphs would imply they are three independent things to pick from.
+ */
+function HowItWorks() {
+  return (
+    <section id="how" className={`${SHELL} scroll-mt-8 border-t border-border-soft py-20`}>
+      <Reveal>
+        <span className="eyebrow text-ink-faint">How it works</span>
+        <h2 className="mt-4 max-w-[20ch] text-2xl font-semibold text-ink sm:text-3xl">
+          Three steps, no setup
+        </h2>
+      </Reveal>
+
+      <Reveal delay={80}>
+        <ol className="mt-12 grid gap-8 sm:grid-cols-3">
+          {STEPS.map(([title, body], i) => (
+            <li key={title}>
+              <span className="eyebrow tnum text-ink-faint">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-4 text-md font-medium text-ink">{title}</h3>
+              <p className="mt-2 text-base leading-relaxed text-ink-faint">{body}</p>
+            </li>
+          ))}
+        </ol>
       </Reveal>
     </section>
   );
@@ -162,18 +212,15 @@ function FeatureRow({ feature, flip }: { feature: Feature; flip: boolean }) {
     <section id={feature.id} className={`${SHELL} scroll-mt-8 border-t border-border-soft py-20`}>
       <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
         <Reveal className={flip ? "lg:order-2" : ""}>
-          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint">
-            {feature.eyebrow}
-          </span>
-          <h2 className="mt-3 text-[28px] font-semibold leading-tight text-ink sm:text-[32px]">
-            {feature.title}
-          </h2>
-          <p className="mt-4 max-w-[52ch] text-[14px] leading-relaxed text-ink-dim">
+          <span className="eyebrow text-ink-faint">{feature.eyebrow}</span>
+          <h2 className="mt-4 text-2xl font-semibold text-ink sm:text-3xl">{feature.title}</h2>
+          <p className="mt-4 max-w-[52ch] text-md leading-relaxed text-ink-dim">
             {feature.body}
           </p>
-          <ul className="mt-7 flex flex-col gap-3 border-t border-border-soft pt-6">
+          <ul className="mt-8 flex flex-col gap-3 border-t border-border-soft pt-6">
             {feature.points.map((point) => (
-              <li key={point} className="flex items-start gap-3 text-[13px] leading-relaxed text-ink-faint">
+              <li key={point} className="flex items-start gap-3 text-base leading-relaxed text-ink-faint">
+                {/* 14px glyph in a 20px line box: (20 - 14) / 2 = 3. */}
                 <Icon name="check" size={14} className="mt-[3px] shrink-0 text-ink-dim" />
                 <span>{point}</span>
               </li>
@@ -201,24 +248,22 @@ function Security() {
   return (
     <section id="security" className={`${SHELL} scroll-mt-8 border-t border-border-soft py-20`}>
       <Reveal>
-        <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint">
-          Isolation
-        </span>
-        <h2 className="mt-3 max-w-[20ch] text-[28px] font-semibold leading-tight text-ink sm:text-[32px]">
+        <span className="eyebrow text-ink-faint">Isolation</span>
+        <h2 className="mt-4 max-w-[20ch] text-2xl font-semibold text-ink sm:text-3xl">
           Someone else's code, run carefully
         </h2>
       </Reveal>
 
       <Reveal delay={80}>
-        <div className="mt-12 grid gap-10 sm:grid-cols-3">
+        <div className="mt-12 grid gap-8 sm:grid-cols-3">
           {GUARANTEES.map(([icon, title, body]) => (
             <div key={title}>
               <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border
                                bg-surface text-ink-dim">
-                <Icon name={icon} size={17} />
+                <Icon name={icon} size={18} />
               </span>
-              <h3 className="mt-4 text-[14px] font-medium text-ink">{title}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-ink-faint">{body}</p>
+              <h3 className="mt-4 text-md font-medium text-ink">{title}</h3>
+              <p className="mt-2 text-base leading-relaxed text-ink-faint">{body}</p>
             </div>
           ))}
         </div>
@@ -235,13 +280,12 @@ function Closing({ cta }: { cta: { to: string; label: string } }) {
       <Reveal>
         {/* Centred like the hero: a full-width card with everything packed
             into its left third reads as a layout that ran out of content. */}
-        <div className="flex flex-col items-center gap-8 rounded-xl border border-border bg-surface
-                        px-8 py-14 text-center sm:px-12">
+        <div className="card flex flex-col items-center gap-8 px-8 py-16 text-center sm:px-12">
           <div>
-            <h2 className="text-[28px] font-semibold leading-tight text-ink sm:text-[32px]">
+            <h2 className="text-2xl font-semibold text-ink sm:text-3xl">
               Start with an example
             </h2>
-            <p className="mx-auto mt-4 max-w-[54ch] text-[14px] leading-relaxed text-ink-dim">
+            <p className="mx-auto mt-4 max-w-[54ch] text-md leading-relaxed text-ink-dim">
               Pick a language, load one of the bundled snippets and press
               Visualize. Nothing to configure, nothing to install.
             </p>
@@ -271,15 +315,16 @@ export function Landing() {
     <div className="h-full overflow-y-auto scroll-smooth bg-canvas">
       {/* Wordmark only. A "Sign in" link up here would go exactly where the
           hero button already goes. */}
-      <header className={`${SHELL} flex h-16 items-center gap-2.5`}>
+      <header className={`${SHELL} flex h-16 items-center gap-2`}>
         <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-on-accent">
           <Icon name="box" size={14} />
         </span>
-        <span className="text-[13px] font-semibold text-ink">Visualizer</span>
+        <span className="text-base font-semibold text-ink">Visualizer</span>
       </header>
 
       <main>
         <Hero cta={cta} />
+        <HowItWorks />
         {FEATURES.map((feature, i) => (
           <FeatureRow key={feature.id} feature={feature} flip={i % 2 === 1} />
         ))}

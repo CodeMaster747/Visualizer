@@ -25,10 +25,11 @@ export function NarrationStrip({ loading }: Props) {
   if (!note && !loading && !hasAny) return null;
 
   return (
-    <div className="flex min-h-9 shrink-0 items-center gap-3 border-t border-border-soft
+    <div className="flex min-h-control-md shrink-0 items-center gap-3 border-t border-border-soft
                     bg-surface px-4 py-2">
-      <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-medium
-                       uppercase tracking-[0.08em] text-accent">
+      {/* The one eyebrow in the app that is not `ink-faint`, which is exactly
+          why the utility leaves colour to the call site. */}
+      <span className="eyebrow flex shrink-0 items-center gap-1.5 text-accent">
         <Icon name="sparkle" size={12} />
         {loading && !hasAny ? "Explaining…" : "AI"}
       </span>
@@ -39,7 +40,7 @@ export function NarrationStrip({ loading }: Props) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -3 }}
           transition={{ duration: 0.18 }}
-          className="text-[12px] leading-normal text-ink-dim"
+          className="text-sm leading-normal text-ink-dim"
         >
           {note ?? (
             <span className="italic text-ink-faint">

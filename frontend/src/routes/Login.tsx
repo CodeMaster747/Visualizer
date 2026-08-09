@@ -21,7 +21,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "../components/ui/Button";
-import { Segmented } from "../components/ui/Controls";
+import { Input, Segmented } from "../components/ui/Controls";
 import { Icon } from "../components/ui/Icon";
 import { isAuthConfigured } from "../lib/auth";
 import { beginAzureSignIn, useAccount } from "../store/account";
@@ -64,22 +64,18 @@ function MicrosoftMark() {
   );
 }
 
-const FIELD =
-  `h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-[13px] text-ink
-   transition-colors duration-150 placeholder:text-ink-faint hover:border-border-strong`;
-
 /** Shared by both sign-in modes: the wordmark, and a way back to the landing page. */
 function Header() {
   return (
     <header className="mx-auto flex h-16 w-full shrink-0 max-w-[1040px] items-center px-6 sm:px-10">
       <Link
         to="/"
-        className="flex items-center gap-2.5 text-ink-dim transition-colors duration-150 hover:text-ink"
+        className="flex items-center gap-2 text-ink-dim transition-colors duration-150 hover:text-ink"
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent text-on-accent">
           <Icon name="box" size={14} />
         </span>
-        <span className="text-[13px] font-semibold text-ink">Visualizer</span>
+        <span className="text-base font-semibold text-ink">Visualizer</span>
       </Link>
     </header>
   );
@@ -94,7 +90,10 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-[12px] font-medium text-ink-dim">
+      {/* The label is dim and the input's text is not, so the two are told
+          apart by weight rather than by the reader working out which box is
+          which. */}
+      <label htmlFor={id} className="mb-2 block text-sm font-medium text-ink-dim">
         {label}
       </label>
       {children}
@@ -144,23 +143,23 @@ export function Login() {
       <div className="flex h-full flex-col overflow-y-auto bg-canvas">
         <Header />
         <main className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center px-6 py-10">
-          <h1 className="text-[24px] font-semibold leading-tight text-ink">Welcome</h1>
-          <p className="mt-1.5 text-[13px] text-ink-dim">
+          <h1 className="text-2xl font-semibold text-ink">Welcome</h1>
+          <p className="mt-2 text-base text-ink-dim">
             Sign in to run code and keep your traces.
           </p>
 
           <Button
             variant="primary"
             size="md"
-            className="mt-7 w-full"
+            className="mt-8 w-full"
             onClick={() => beginAzureSignIn(from)}
           >
             <MicrosoftMark />
             Continue with Microsoft
           </Button>
 
-          <p className="mt-6 flex items-start gap-2 text-[12px] leading-relaxed text-ink-faint">
-            <Icon name="user" size={14} className="mt-px shrink-0" />
+          <p className="mt-6 flex items-start gap-2 text-sm leading-relaxed text-ink-faint">
+            <Icon name="user" size={14} className="mt-[2px] shrink-0" />
             <span>
               You will be taken to Microsoft to sign in. Your password is never
               entered here, and this app only ever receives your name and email
@@ -179,13 +178,15 @@ export function Login() {
       {/* Centred in whatever the header leaves, and still scrollable if a
           short window would otherwise crop the form. */}
       <main className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center px-6 py-10">
-        <h1 className="text-[24px] font-semibold leading-tight text-ink">{copy.title}</h1>
-        <p className="mt-1.5 text-[13px] text-ink-dim">{copy.subtitle}</p>
+        <h1 className="text-2xl font-semibold text-ink">{copy.title}</h1>
+        <p className="mt-2 text-base text-ink-dim">{copy.subtitle}</p>
 
         {/* `flex` so the switch hugs its two labels instead of stretching to
-            the form width with the buttons packed left. */}
-        <div className="mt-7 flex">
+            the form width with the buttons packed left. `md` so it stands at
+            the same 36px as the fields below it. */}
+        <div className="mt-8 flex">
           <Segmented<Mode>
+            size="md"
             value={mode}
             onChange={(next) => {
               setMode(next);
@@ -208,44 +209,42 @@ export function Login() {
         >
           {mode === "register" && (
             <Field id="name" label="Name">
-              <input
+              <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
                 placeholder="Ada Lovelace"
-                className={FIELD}
               />
             </Field>
           )}
 
           <Field id="email" label="Email">
-            <input
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
               placeholder="you@example.com"
-              className={FIELD}
             />
           </Field>
 
           {error && (
-            <p role="alert" className="flex items-center gap-2 text-[12px] text-danger">
-              <Icon name="diamond" size={13} className="shrink-0" />
+            <p role="alert" className="flex items-center gap-2 text-sm text-danger">
+              <Icon name="diamond" size={12} className="shrink-0" />
               {error}
             </p>
           )}
 
           <Button type="submit" variant="primary" size="md" className="mt-1 w-full">
             {copy.submit}
-            <Icon name="arrowRight" size={15} />
+            <Icon name="arrowRight" size={16} />
           </Button>
         </form>
 
-        <p className="mt-6 flex items-start gap-2 text-[12px] leading-relaxed text-ink-faint">
-          <Icon name="user" size={14} className="mt-px shrink-0" />
+        <p className="mt-6 flex items-start gap-2 text-sm leading-relaxed text-ink-faint">
+          <Icon name="user" size={14} className="mt-[2px] shrink-0" />
           <span>
             No password — this build has no account server. Your profile,
             preferences and recent runs are stored in this browser and nowhere

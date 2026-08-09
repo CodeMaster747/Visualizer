@@ -22,8 +22,8 @@ export function EmptyState({ text, icon, title, children }: Props) {
           <Icon name={icon} size={18} />
         </div>
       )}
-      {title && <h3 className="mb-1.5 text-[15px] font-medium text-ink">{title}</h3>}
-      <p className="max-w-[42ch] text-[12px] leading-relaxed text-ink-faint">{text}</p>
+      {title && <h3 className="mb-2 text-lg font-medium text-ink">{title}</h3>}
+      <p className="max-w-[42ch] text-sm leading-relaxed text-ink-faint">{text}</p>
       {children && <div className="mt-6">{children}</div>}
     </div>
   );

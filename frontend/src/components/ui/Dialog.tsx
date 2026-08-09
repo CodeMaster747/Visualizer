@@ -8,6 +8,8 @@
 
 import { useEffect } from "react";
 
+import { Button } from "./Button";
+
 interface Props {
   title: string;
   body: string;
@@ -32,25 +34,20 @@ export function Dialog({ title, body, confirmLabel, onConfirm, onCancel }: Props
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[380px] rounded-xl border border-border bg-surface p-6"
+        className="card w-full max-w-[380px] p-6"
       >
-        <h2 className="text-[15px] font-medium text-ink">{title}</h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-ink-dim">{body}</p>
+        <h2 className="text-lg font-medium text-ink">{title}</h2>
+        <p className="mt-2 text-base leading-relaxed text-ink-dim">{body}</p>
+        {/* Both actions come from `Button`. Hand-rolling them here is how this
+            dialog ended up with a second, brighter primary treatment than the
+            rest of the app. */}
         <div className="mt-6 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="h-8 rounded-lg px-3 text-[12px] font-medium text-ink-dim
-                       transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
-          >
+          <Button variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="h-8 rounded-lg bg-accent px-3 text-[12px] font-medium text-on-accent
-                       transition-colors duration-150 hover:bg-ink"
-          >
+          </Button>
+          <Button variant="primary" onClick={onConfirm}>
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -23,12 +23,12 @@ function Frame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface">
-      <div className="flex h-9 items-center gap-2 border-b border-border-soft px-3.5">
-        <Icon name={icon} size={13} className="shrink-0 text-ink-faint" />
-        <span className="truncate font-mono text-[11px] text-ink-faint">{label}</span>
+    <div className="card overflow-hidden">
+      <div className="flex h-10 items-center gap-2 border-b border-border-soft px-4">
+        <Icon name={icon} size={14} className="shrink-0 text-ink-faint" />
+        <span className="truncate font-mono text-xs text-ink-faint">{label}</span>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-6">{children}</div>
     </div>
   );
 }
@@ -49,11 +49,11 @@ const LIBRARY_LINES: [text: string, current: boolean][] = [
 export function LibrariesVisual() {
   return (
     <Frame icon="file" label="sales.py">
-      <div className="font-mono text-[12px] leading-[1.9]">
+      <div className="font-mono text-sm leading-[1.9]">
         {LIBRARY_LINES.map(([text, current], i) => (
           <div
             key={i}
-            className={`-mx-2 flex items-center gap-3 rounded px-2 ${
+            className={`-mx-2 flex items-center gap-3 rounded-md px-2 ${
               current ? "bg-accent-soft" : ""
             }`}
           >
@@ -64,9 +64,9 @@ export function LibrariesVisual() {
           </div>
         ))}
       </div>
-      <div className="mt-5 flex items-center justify-between border-t border-border-soft pt-3.5">
-        <span className="text-[11px] text-ink-faint">Traced in full</span>
-        <span className="tnum text-[11px] text-ink-dim">8 steps · 0.16s</span>
+      <div className="mt-6 flex items-center justify-between border-t border-border-soft pt-4">
+        <span className="text-xs text-ink-faint">Traced in full</span>
+        <span className="tnum text-xs text-ink-dim">8 steps · 0.16s</span>
       </div>
     </Frame>
   );
@@ -171,8 +171,8 @@ export function LanguagesVisual() {
         {LANGUAGES.map((name) => (
           <div
             key={name}
-            className="flex h-11 items-center justify-center rounded-lg border border-border
-                       bg-surface-2 text-[12px] text-ink-dim"
+            className="flex h-control-lg items-center justify-center rounded-lg border border-border
+                       bg-surface-2 text-sm text-ink-dim"
           >
             {name}
           </div>
@@ -195,8 +195,8 @@ export function LanguagesVisual() {
       </svg>
 
       <div className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-4 py-3">
-        <span className="font-mono text-[12px] text-ink">trace-v1.json</span>
-        <span className="text-[11px] text-ink-faint">steps · stack · heap</span>
+        <span className="font-mono text-sm text-ink">trace-v1.json</span>
+        <span className="text-xs text-ink-faint">steps · stack · heap</span>
       </div>
     </Frame>
   );
@@ -216,7 +216,7 @@ export function PlaybackVisual() {
         {TRANSPORT.map((name) => (
           <span
             key={name}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+            className={`flex h-control-sm w-control-sm items-center justify-center rounded-lg ${
               name === "play"
                 ? "bg-accent text-on-accent"
                 : "border border-border bg-surface-2 text-ink-dim"
@@ -225,19 +225,19 @@ export function PlaybackVisual() {
             <Icon name={name} size={14} filled />
           </span>
         ))}
-        <span className="tnum ml-auto text-[11px] text-ink-dim">42 / 118</span>
+        <span className="tnum ml-auto text-xs text-ink-dim">42 / 118</span>
       </div>
 
       {/* The scrubber, at step 42. */}
-      <div className="relative mt-5 h-1 rounded-full bg-surface-3">
+      <div className="relative mt-6 h-1 rounded-full bg-surface-3">
         <div className="absolute inset-y-0 left-0 w-[36%] rounded-full bg-accent" />
         <div className="absolute left-[36%] top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink" />
       </div>
 
-      <p className="mt-5 border-t border-border-soft pt-3.5 text-[12px] leading-relaxed text-ink-dim">
+      <p className="mt-6 border-t border-border-soft pt-4 text-sm leading-relaxed text-ink-dim">
         <span className="text-ink-faint">Step 42 — </span>
-        <code className="font-mono text-[11px] text-ink">totals</code> now points at the
-        grouped frame; the original <code className="font-mono text-[11px] text-ink">df</code> is
+        <code className="font-mono text-xs text-ink">totals</code> now points at the
+        grouped frame; the original <code className="font-mono text-xs text-ink">df</code> is
         unchanged.
       </p>
     </Frame>

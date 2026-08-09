@@ -220,8 +220,8 @@ export function Snippet() {
 
   return (
     <div className="flex h-full flex-col bg-canvas">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-        <h1 className="shrink-0 text-[13px] font-medium text-ink">Code snippet</h1>
+      <header className="flex h-bar shrink-0 items-center gap-3 border-b border-border px-4">
+        <h1 className="shrink-0 text-base font-medium text-ink">Code snippet</h1>
         <span className="h-4 w-px shrink-0 bg-border" />
 
         {/* A tracer that health-check reports as down stays visible but
@@ -241,6 +241,7 @@ export function Snippet() {
           value={exampleId ?? "custom"}
           onChange={(e) => pick(e.target.value)}
           title="Load a bundled example"
+          size="sm"
           className="w-[168px]"
         >
           {exampleId === null && (
@@ -258,16 +259,16 @@ export function Snippet() {
         <div className="ml-auto flex min-w-0 items-center gap-3">
           {files.length > 0 && (
             <span
-              className="flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border-soft
-                         bg-surface-2 px-2 text-[11px] text-ink-dim"
+              className="flex h-control-sm shrink-0 items-center gap-1.5 rounded-lg border border-border-soft
+                         bg-surface-2 px-2.5 text-xs text-ink-dim"
               title={`Available to your code by name, e.g. pd.read_csv("${files[0].name}")`}
             >
-              <Icon name="database" size={13} className="text-ink-faint" />
+              <Icon name="database" size={12} className="text-ink-faint" />
               <span className="font-mono">{files.map((f) => f.name).join(", ")}</span>
             </span>
           )}
           {shownPackages.length > 0 && (
-            <span className="truncate font-mono text-[11px] text-ink-faint">
+            <span className="truncate font-mono text-xs text-ink-faint">
               {shownPackages.join(" · ")}
             </span>
           )}
@@ -279,7 +280,7 @@ export function Snippet() {
               title="Copy a link that replays this exact trace"
               className="shrink-0"
             >
-              <Icon name={copied ? "check" : "link"} size={13} />
+              <Icon name={copied ? "check" : "link"} size={14} />
               {copied ? "Copied" : "Share"}
             </Button>
           )}
@@ -288,26 +289,34 @@ export function Snippet() {
             onClick={run}
             disabled={running || source.trim().length === 0}
           >
-            <Icon name="play" size={13} filled />
+            <Icon name="play" size={14} filled />
             {running ? "Running…" : trace ? "Run again" : "Visualize"}
           </Button>
         </div>
       </header>
 
-      {/* Column minimums are what keep a DataFrame card readable; below their
-          sum the workspace scrolls sideways rather than crushing the panes. */}
+      {/*
+        Column minimums are what keep a DataFrame card readable; below their
+        sum the workspace scrolls sideways rather than crushing the panes.
+
+        The outer inset is 16px, matching the toolbar above and the transport
+        below -- at 12px the panel edges sat four pixels inside the header
+        title and the scrubber, which is the kind of seam you see down the
+        whole height of the screen once you have seen it. The gap between
+        panes stays 12px: that one is density, not alignment.
+      */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(300px,1fr)_minmax(220px,0.55fr)_minmax(340px,1.3fr)]
-                      gap-3 overflow-x-auto p-3">
+                      gap-3 overflow-x-auto p-4">
         <div className="grid min-h-0 grid-rows-[1.6fr_1fr] gap-3">
           <Panel
             title="Code"
             right={
               step ? (
-                <span className="tnum font-mono text-[11px] text-accent">
+                <span className="tnum font-mono text-xs text-accent">
                   line {step.line} · {step.event}
                 </span>
               ) : (
-                <span className="text-[11px] text-ink-faint">editable</span>
+                <span className="text-xs text-ink-faint">editable</span>
               )
             }
           >
@@ -325,7 +334,7 @@ export function Snippet() {
             {error ? (
               <div className="p-4">
                 <div className="rounded-lg border border-danger/40 bg-danger-soft p-3
-                                font-mono text-[11px] leading-relaxed text-danger">
+                                font-mono text-xs leading-relaxed text-danger">
                   {error}
                 </div>
               </div>
@@ -348,7 +357,7 @@ export function Snippet() {
         <Panel
           title="Heap"
           right={
-            trace && <span className="text-[11px] text-ink-faint">hover to trace references</span>
+            trace && <span className="text-xs text-ink-faint">hover to trace references</span>
           }
         >
           {trace ? (

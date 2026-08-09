@@ -178,8 +178,11 @@ one call per step. It is:
 ### Azure (optional)
 
 Two integrations, each independently switched on by configuration and each
-degrading to the previous behaviour when absent — see
-[`infra/azure/README.md`](infra/azure/README.md) for setup.
+degrading to the previous behaviour when absent. See
+[`infra/azure/README.md`](infra/azure/README.md) for setup and
+[`infra/azure/MIGRATION.md`](infra/azure/MIGRATION.md) for moving to a new
+subscription; [`infra/azure/provision.sh`](infra/azure/provision.sh) automates
+the mechanical parts of both.
 
 - **Blob Storage** is a durable tier *behind* the Caffeine cache, not a
   replacement for it. The SHA-256 that already keys the cache becomes the blob

@@ -137,7 +137,7 @@ export function HeapGraph() {
 
   if (!step || !layout) {
     return (
-      <div className="flex h-full items-center justify-center text-[12px] text-ink-faint">
+      <div className="flex h-full items-center justify-center text-sm text-ink-faint">
         No objects yet
       </div>
     );
@@ -175,7 +175,7 @@ export function HeapGraph() {
       </svg>
 
       {isEmpty ? (
-        <div className="flex h-full items-center justify-center text-[12px] text-ink-faint">
+        <div className="flex h-full items-center justify-center text-sm text-ink-faint">
           All values are primitives — nothing on the heap yet
         </div>
       ) : (

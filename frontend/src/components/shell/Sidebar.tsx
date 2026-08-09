@@ -5,6 +5,17 @@
  * can have the width back without the user losing their place in the app. The
  * icon column sits at the same x in both states, so collapsing reads as the
  * labels sliding away rather than the whole nav moving.
+ *
+ * That claim is load-bearing and was quietly false, so the arithmetic is
+ * written down. Every glyph in this file centres at x = 28, which is also the
+ * centre of the collapsed rail:
+ *
+ *     nav      px-2 (8)  + item px-3 (12) + 16px icon   -> 8 + 12 + 8  = 28
+ *     account  p-2  (8)  + button px-2 (8) + 24px avatar -> 8 + 8 + 12 = 28
+ *     header   pl-4 (16) + 24px mark                     -> 16 + 12    = 28
+ *
+ * The header used pl-3, putting the wordmark four pixels left of the column it
+ * heads and off-centre in the collapsed rail.
  */
 
 import { NavLink } from "react-router-dom";
@@ -32,16 +43,16 @@ function NavItem({ item, collapsed }: { item: Item; collapsed: boolean }) {
       end={item.to === "/app"}
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
-        `flex h-9 items-center gap-3 rounded-lg px-3 transition-colors duration-150 ${
+        `flex h-control-md items-center gap-3 rounded-lg px-3 transition-colors duration-150 ${
           isActive
             ? "bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--color-border-soft)]"
-            : "text-ink-dim hover:bg-surface-2/60 hover:text-ink"
+            : "text-ink-dim hover:bg-surface-2 hover:text-ink active:bg-surface-3"
         }`
       }
     >
       <Icon name={item.icon} className="shrink-0" />
       <span
-        className={`truncate text-[13px] transition-opacity duration-150 ${
+        className={`truncate text-base transition-opacity duration-150 ${
           collapsed ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
@@ -60,15 +71,18 @@ export function Sidebar() {
     // below hides its own overflow instead.
     <aside
       className={`group/sidebar relative z-30 flex shrink-0 flex-col border-r border-border
-                  bg-surface transition-[width] duration-200 ease-[cubic-bezier(0.2,0,0,1)]
-                  ${collapsed ? "w-14" : "w-60"}`}
+                  bg-surface transition-[width] duration-200 ease-standard
+                  ${collapsed ? "w-bar" : "w-60"}`}
     >
-      <div className="flex h-14 shrink-0 items-center gap-3 overflow-hidden px-3">
+      {/* pl-4 puts the 24px mark's centre at x=28, on the icon column. pr-2
+          matches the nav's own inset, so the collapse button lands on the
+          same right margin as everything below it. */}
+      <div className="flex h-bar shrink-0 items-center gap-3 overflow-hidden pl-4 pr-2">
         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent text-on-accent">
           <Icon name="box" size={14} />
         </div>
         <span
-          className={`flex-1 truncate text-[13px] font-semibold text-ink transition-opacity duration-150 ${
+          className={`flex-1 truncate text-base font-semibold text-ink transition-opacity duration-150 ${
             collapsed ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
         >
@@ -77,18 +91,18 @@ export function Sidebar() {
         <button
           onClick={toggleSidebar}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-faint
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-faint
                       transition-[background-color,color,opacity] duration-150
-                      hover:bg-surface-2 hover:text-ink
+                      hover:bg-surface-2 hover:text-ink active:bg-surface-3
                       ${collapsed ? "hidden" : "opacity-0 group-hover/sidebar:opacity-100"}`}
         >
-          <Icon name="sidebar" size={15} />
+          <Icon name="sidebar" size={16} />
         </button>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-hidden px-2">
+      <nav className="flex flex-1 flex-col gap-1 overflow-hidden px-2">
         <div
-          className={`px-3 pb-2 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint
+          className={`eyebrow px-3 pb-2 pt-2 text-ink-faint
                       transition-opacity duration-150 ${collapsed ? "opacity-0" : "opacity-100"}`}
         >
           Workspace
@@ -100,8 +114,9 @@ export function Sidebar() {
           <button
             onClick={toggleSidebar}
             title="Expand sidebar"
-            className="mt-1 flex h-9 items-center rounded-lg px-3 text-ink-faint
-                       transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
+            className="flex h-control-md items-center rounded-lg px-3 text-ink-faint
+                       transition-colors duration-150 hover:bg-surface-2 hover:text-ink
+                       active:bg-surface-3"
           >
             <Icon name="sidebar" className="shrink-0" />
           </button>

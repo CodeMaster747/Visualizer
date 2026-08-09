@@ -18,11 +18,18 @@ interface Props {
 export function Page({ title, subtitle, actions, children, width = "default" }: Props) {
   return (
     <div className="h-full overflow-y-auto">
-      <div className={`mx-auto px-8 py-10 ${width === "narrow" ? "max-w-[640px]" : "max-w-[880px]"}`}>
+      {/* Asymmetric on purpose: 40px above the title, 64px below the content.
+          An equal inset leaves the last row of a scrolled page sitting flush
+          on the viewport edge, which reads as the page having been cut off. */}
+      <div
+        className={`mx-auto px-8 pb-16 pt-10 ${
+          width === "narrow" ? "max-w-[640px]" : "max-w-[880px]"
+        }`}
+      >
         <header className="mb-8 flex items-start justify-between gap-6">
           <div className="min-w-0">
-            <h1 className="text-[24px] font-semibold leading-tight text-ink">{title}</h1>
-            {subtitle && <p className="mt-1.5 text-[13px] text-ink-dim">{subtitle}</p>}
+            <h1 className="text-2xl font-semibold text-ink">{title}</h1>
+            {subtitle && <p className="mt-2 text-base text-ink-dim">{subtitle}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </header>

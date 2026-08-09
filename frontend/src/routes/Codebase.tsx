@@ -21,13 +21,13 @@ export function Codebase() {
       title="Codebase"
       subtitle="Map how a repository fits together, not just one file."
     >
-      <div className="rounded-xl border border-border bg-surface p-8">
+      <div className="card p-8">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border
                         bg-surface-2 text-ink-dim">
           <Icon name="repo" size={18} />
         </div>
-        <h2 className="mt-4 text-[15px] font-medium text-ink">Not available yet</h2>
-        <p className="mt-1.5 max-w-[52ch] text-[13px] leading-relaxed text-ink-dim">
+        <h2 className="mt-4 text-lg font-medium text-ink">Not available yet</h2>
+        <p className="mt-2 max-w-[52ch] text-base leading-relaxed text-ink-dim">
           Snippet tracing is complete for Python and Java. Whole-repository
           visualization is the next phase and is not part of this build.
         </p>
@@ -36,10 +36,11 @@ export function Codebase() {
           {PLANNED.map((item) => (
             <li
               key={item}
-              className="flex items-start gap-3 border-b border-border-soft py-3
-                         text-[13px] leading-relaxed text-ink-dim"
+              className="flex items-start gap-3 border-b border-border-soft py-4
+                         text-base leading-relaxed text-ink-dim"
             >
-              {/* A dot, not a tick: none of this is done yet. */}
+              {/* A dot, not a tick: none of this is done yet. Centred on the
+                  first line box: (20 - 4) / 2 = 8. */}
               <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink-faint" />
               {item}
             </li>

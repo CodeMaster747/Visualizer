@@ -19,14 +19,14 @@ interface RendererProps {
 }
 
 const cell =
-  "px-2 py-1 font-mono text-[10px] text-ink-dim whitespace-nowrap";
+  "px-2 py-1 font-mono text-2xs text-ink-dim whitespace-nowrap";
 
 function TruncationNote({ obj }: { obj: HeapObject }) {
   const shown = obj.items?.length ?? obj.preview?.length ?? 0;
   const total = obj.total ?? obj.shape?.[0];
   if (!obj.truncated || total === undefined || total <= shown) return null;
   return (
-    <div className="px-3 py-2 text-[10px] italic text-ink-faint">
+    <div className="px-3 py-2 text-2xs italic text-ink-faint">
       … {total - shown} more (truncated)
     </div>
   );
@@ -41,12 +41,12 @@ function SequenceRenderer({ obj, heap }: RendererProps) {
       <div className="flex flex-wrap gap-1.5 p-3">
         {items.map((item, i) => (
           <div key={i} className="flex flex-col items-center gap-0.5">
-            {indexed && <span className="text-[10px] text-ink-faint">{i}</span>}
+            {indexed && <span className="text-2xs text-ink-faint">{i}</span>}
             <ValueChip value={item} heap={heap} />
           </div>
         ))}
         {items.length === 0 && (
-          <span className="px-1 text-[11px] italic text-ink-faint">empty</span>
+          <span className="px-1 text-xs italic text-ink-faint">empty</span>
         )}
       </div>
       <TruncationNote obj={obj} />
@@ -73,7 +73,7 @@ function DictRenderer({ obj, heap }: RendererProps) {
         </tbody>
       </table>
       {entries.length === 0 && (
-        <span className="block px-3 py-2 text-[11px] italic text-ink-faint">empty</span>
+        <span className="block px-3 py-2 text-xs italic text-ink-faint">empty</span>
       )}
       <TruncationNote obj={obj} />
     </div>
@@ -96,7 +96,7 @@ function InstanceRenderer({ obj, heap }: RendererProps) {
         <tbody>
           {fields.map(([name, value]) => (
             <tr key={name} className="border-t border-border-soft">
-              <td className="py-1.5 pl-3 pr-4 font-mono text-[11px] text-ink-dim">
+              <td className="py-1.5 pl-3 pr-4 font-mono text-xs text-ink-dim">
                 {name}
               </td>
               <td className="py-1.5 pr-3 text-right">
@@ -112,7 +112,7 @@ function InstanceRenderer({ obj, heap }: RendererProps) {
             {obj.methods.map((m) => (
               <span
                 key={m}
-                className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-faint"
+                className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-2xs text-ink-faint"
               >
                 {m}()
               </span>
@@ -121,7 +121,7 @@ function InstanceRenderer({ obj, heap }: RendererProps) {
         </div>
       )}
       {showClassInfo && obj.mro && obj.mro.length > 1 && (
-        <div className="border-t border-border-soft px-3 py-2 font-mono text-[10px] text-ink-faint">
+        <div className="border-t border-border-soft px-3 py-2 font-mono text-2xs text-ink-faint">
           {obj.mro.join(" → ")}
         </div>
       )}
@@ -209,7 +209,7 @@ function NdArrayRenderer({ obj }: RendererProps) {
           row.map((v, j) => (
             <div
               key={`${i}-${j}`}
-              className="rounded-sm px-1.5 py-1 text-center font-mono text-[10px] text-ink"
+              className="rounded-sm px-1.5 py-1 text-center font-mono text-2xs text-ink"
               style={{
                 background:
                   typeof v === "number"
@@ -229,7 +229,7 @@ function NdArrayRenderer({ obj }: RendererProps) {
 
 function GenericRenderer({ obj }: RendererProps) {
   return (
-    <div className="px-3 py-2 font-mono text-[11px] leading-relaxed text-ink-dim break-all">
+    <div className="px-3 py-2 font-mono text-xs leading-relaxed text-ink-dim break-all">
       {obj.repr ?? obj.kind}
     </div>
   );
@@ -321,10 +321,10 @@ export function HeapNode({ id, obj, heap, changed, isNew }: HeapNodeProps) {
     >
       <div className="flex h-7 items-center justify-between gap-3 border-b border-border-soft
                       bg-surface-2 px-3">
-        <span className={`truncate font-mono text-[11px] font-medium ${KIND_ACCENT[obj.kind] ?? "text-ink-dim"}`}>
+        <span className={`truncate font-mono text-xs font-medium ${KIND_ACCENT[obj.kind] ?? "text-ink-dim"}`}>
           {title}
         </span>
-        <span className="shrink-0 font-mono text-[10px] text-ink-faint">{id}</span>
+        <span className="shrink-0 font-mono text-2xs text-ink-faint">{id}</span>
       </div>
       <Renderer obj={obj} heap={heap} />
     </motion.div>

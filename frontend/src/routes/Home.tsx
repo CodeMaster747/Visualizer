@@ -38,8 +38,9 @@ function Entry({
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-start rounded-xl border border-border bg-surface p-6
-                 text-left transition-colors duration-150 hover:border-border-strong hover:bg-surface-2"
+      className="card group flex flex-col items-start p-6 text-left
+                 transition-colors duration-150 hover:border-border-strong hover:bg-surface-2
+                 active:bg-surface-3"
     >
       <span className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-border
                        bg-surface-2 text-ink-dim transition-colors duration-150
@@ -47,16 +48,19 @@ function Entry({
         <Icon name={icon} size={18} />
       </span>
       <span className="flex items-center gap-2">
-        <span className="text-[15px] font-medium text-ink">{title}</span>
+        <span className="text-lg font-medium text-ink">{title}</span>
         {badge && (
-          <span className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5
-                           text-[10px] font-medium uppercase tracking-[0.06em] text-ink-faint">
+          <span className="eyebrow rounded-md border border-border bg-surface-2 px-1.5 py-0.5
+                           text-ink-faint">
             {badge}
           </span>
         )}
       </span>
-      <span className="mt-1.5 text-[13px] leading-relaxed text-ink-dim">{description}</span>
-      <span className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-ink-faint
+      <span className="mt-2 text-base leading-relaxed text-ink-dim">{description}</span>
+      {/* mt-auto, so the two cards' affordances sit on one line however many
+          lines their descriptions run to. Without it the shorter card's "Open"
+          floats 21px above its neighbour's. */}
+      <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-medium text-ink-faint
                        transition-colors duration-150 group-hover:text-ink">
         Open
         <Icon name="arrowRight" size={14} />
@@ -94,13 +98,12 @@ export function Home() {
         />
       </div>
 
-      <section className="mt-10">
-        <h2 className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint">
-          Recent
-        </h2>
+      {/* 32px between sections, the same gap Profile and Settings use. */}
+      <section className="mt-8">
+        <h2 className="eyebrow mb-2 text-ink-faint">Recent</h2>
 
         {runs.length === 0 ? (
-          <p className="border-t border-border-soft py-4 text-[12px] text-ink-faint">
+          <p className="border-t border-border-soft py-4 text-sm text-ink-faint">
             Snippets you trace show up here, stored in this browser.
           </p>
         ) : (
@@ -118,19 +121,20 @@ export function Home() {
                     })
                   }
                   className="flex h-11 w-full items-center gap-4 border-b border-border-soft px-2
-                             text-left transition-colors duration-150 hover:bg-surface-2"
+                             text-left transition-colors duration-150 hover:bg-surface-2
+                             active:bg-surface-3"
                 >
-                  <Icon name="file" size={15} className="shrink-0 text-ink-faint" />
-                  <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-dim">
+                  <Icon name="file" size={14} className="shrink-0 text-ink-faint" />
+                  <span className="min-w-0 flex-1 truncate font-mono text-sm text-ink-dim">
                     {run.title}
                   </span>
-                  <span className="shrink-0 text-[11px] text-ink-faint">
+                  <span className="shrink-0 text-xs text-ink-faint">
                     {languageName(run.language)}
                   </span>
-                  <span className="tnum w-16 shrink-0 text-right text-[11px] text-ink-faint">
+                  <span className="tnum w-16 shrink-0 text-right text-xs text-ink-faint">
                     {run.steps} steps
                   </span>
-                  <span className="tnum w-20 shrink-0 text-right text-[11px] text-ink-faint">
+                  <span className="tnum w-20 shrink-0 text-right text-xs text-ink-faint">
                     {relativeTime(run.at)}
                   </span>
                 </button>

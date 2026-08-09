@@ -91,7 +91,7 @@ export function ValueChip({ value, heap, changed, isNew }: Props) {
         // nowrap: a summary like "DataFrame 6×3" breaking across two lines
         // makes the stack row jump a whole line height as values change.
         className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border
-                   px-2 py-0.5 font-mono text-[11px] text-ink-dim cursor-pointer select-none"
+                   px-2 py-0.5 font-mono text-xs text-ink-dim cursor-pointer select-none"
         title={heap[value.ref]?.repr ?? value.ref}
       >
         <span className="text-accent">→</span>
@@ -122,7 +122,7 @@ export function ValueChip({ value, heap, changed, isNew }: Props) {
         borderColor: { duration: 1.1, ease: "easeOut" },
         default: { duration: 0.2 },
       }}
-      className={`inline-block rounded-md border px-2 py-0.5 font-mono text-[11px] ${color}`}
+      className={`inline-block rounded-md border px-2 py-0.5 font-mono text-xs ${color}`}
     >
       {formatPrim(value, literals)}
       {value.truncated && <span className="text-ink-faint"> …</span>}

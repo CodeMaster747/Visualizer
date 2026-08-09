@@ -16,16 +16,12 @@ interface Props {
 
 export function Panel({ title, children, right }: Props) {
   return (
-    // The inset hairline catches the page's light source along the top edge,
-    // which is what separates a panel from the canvas without a drop shadow.
-    <section
-      className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border
-                 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-    >
+    // `card` carries the border, radius and the inset hairline that catches
+    // the page's light source along the top edge -- which is what separates a
+    // panel from the canvas without a drop shadow.
+    <section className="card flex h-full min-h-0 flex-col overflow-hidden">
       <header className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-border-soft px-4">
-        <h2 className="text-[10px] font-medium uppercase tracking-[0.09em] text-ink-faint">
-          {title}
-        </h2>
+        <h2 className="eyebrow text-ink-faint">{title}</h2>
         {right}
       </header>
       <div className="min-h-0 flex-1">{children}</div>

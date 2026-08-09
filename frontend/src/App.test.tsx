@@ -86,6 +86,30 @@ describe("landing page", () => {
       expect(screen.getByRole("heading", { name: column })).toBeDefined();
     }
   });
+
+  it("explains the run loop before it argues about it", () => {
+    renderAt("/");
+    for (const step of ["Paste or upload", "It runs once, sandboxed", "Scrub the timeline"]) {
+      expect(screen.getByRole("heading", { name: step })).toBeDefined();
+    }
+  });
+
+  it("anchors the footer's How it works link at a section that exists", () => {
+    const { container } = renderAt("/");
+    const link = screen.getByRole("link", { name: "How it works" });
+    expect(link.getAttribute("href")).toBe("#how");
+    expect(container.querySelector("#how")).not.toBeNull();
+  });
+
+  // A footer link landing on a sign-in form teaches people the footer is a
+  // wall. The one link that needs an account says so in its label.
+  it("never sends a footer link to the sign-in form", () => {
+    renderAt("/");
+    const footer = within(screen.getByRole("contentinfo"));
+    for (const link of footer.getAllByRole("link")) {
+      expect(link.getAttribute("href")).not.toBe("/login");
+    }
+  });
 });
 
 describe("sign in", () => {

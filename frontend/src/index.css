@@ -15,6 +15,12 @@
 
   Depth comes from layered surfaces, hairline borders and a 1px inner highlight
   -- never from drop shadows, which in a view this dense read as noise.
+
+  Everything a component needs is a token here. Arbitrary values in a className
+  (`text-[13px]`, `tracking-[0.09em]`) are how a system drifts into four
+  near-identical greys and three spellings of the same label, so the scales
+  below are deliberately complete: if a value is missing, add a step here
+  rather than inline it at the call site.
 */
 
 @theme {
@@ -24,16 +30,29 @@
   --color-surface-3: #191c22;
   /* Raised: hover states and controls that sit on top of surface-2. */
   --color-surface-4: #22252c;
-  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.16);
-  --color-border-soft: rgba(255, 255, 255, 0.045);
+  --color-border-soft: rgba(255, 255, 255, 0.06);
   /* Heap edges. Drawn on the canvas rather than against a surface, so they
      need more presence than a border to stay legible at 1.5px. */
   --color-edge: rgba(255, 255, 255, 0.26);
 
+  /*
+    Three steps of text, and only three. Primary is the full ramp; secondary
+    sits at 66% and tertiary at 46%.
+
+    Tertiary is the floor on purpose: it carries 10px and 11px type in twenty
+    places, and a grey quiet enough to look elegant in a mock and unreadable on
+    a laptop in daylight is not restraint, it is a bug.
+
+    0.50 is not a round number picked by eye -- it is the measured point. At
+    0.46 this composites to 4.16:1 against `canvas`, which fails AA for normal
+    text; at 0.50 it is 4.73:1 against `canvas` and 4.77:1 against `surface`.
+    Anything below this is a regression, so re-measure before lowering it.
+  */
   --color-ink: #edeef1;
-  --color-ink-dim: rgba(237, 238, 241, 0.62);
-  --color-ink-faint: rgba(237, 238, 241, 0.36);
+  --color-ink-dim: rgba(237, 238, 241, 0.66);
+  --color-ink-faint: rgba(237, 238, 241, 0.5);
 
   /* The accent is light itself: a platinum used for interactive and structural
      emphasis. Anything filled with it takes --color-on-accent for its text. */
@@ -48,24 +67,92 @@
   /* "This is new." One step below `changed`: present, but never louder than
      the value that actually moved. */
   --color-fresh: #b9bfcc;
-  --color-fresh-soft: rgba(185, 191, 204, 0.10);
+  --color-fresh-soft: rgba(185, 191, 204, 0.1);
   /* The single exception to the monochrome. */
   --color-danger: #e0736f;
   --color-danger-soft: rgba(224, 115, 111, 0.13);
 
   /* Value types, separated by weight rather than hue -- the glyphs already
      differ (quotes, keywords), so tone only has to rank them: numbers are the
-     data, text supports it, absence recedes. */
+     data, text supports it, absence recedes to the tertiary floor. */
   --color-t-int: #f4f5f7;
   --color-t-str: rgba(237, 238, 241, 0.78);
   --color-t-bool: rgba(237, 238, 241, 0.78);
-  --color-t-null: rgba(237, 238, 241, 0.34);
+  --color-t-null: rgba(237, 238, 241, 0.5);
 
-  /* One radius scale. 12px is the default for anything card-sized. */
+  /*
+    Type scale.
+
+    Eleven steps, and the tracking is part of the step rather than something
+    each call site remembers: the larger the type, the more the default
+    spacing reads as loose, and that correction is a property of the size, not
+    of the element.
+  */
+  --text-2xs: 10px;
+  --text-2xs--line-height: 1.4;
+  --text-2xs--letter-spacing: 0.005em;
+  --text-xs: 11px;
+  --text-xs--line-height: 1.45;
+  --text-xs--letter-spacing: 0;
+  --text-sm: 12px;
+  --text-sm--line-height: 1.5;
+  --text-sm--letter-spacing: -0.006em;
+  --text-base: 13px;
+  --text-base--line-height: 1.54;
+  --text-base--letter-spacing: -0.011em;
+  --text-md: 14px;
+  --text-md--line-height: 1.5;
+  --text-md--letter-spacing: -0.014em;
+  --text-lg: 16px;
+  --text-lg--line-height: 1.45;
+  --text-lg--letter-spacing: -0.018em;
+  --text-xl: 20px;
+  --text-xl--line-height: 1.3;
+  --text-xl--letter-spacing: -0.022em;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 1.2;
+  --text-2xl--letter-spacing: -0.026em;
+  --text-3xl: 32px;
+  --text-3xl--line-height: 1.15;
+  --text-3xl--letter-spacing: -0.03em;
+  --text-4xl: 44px;
+  --text-4xl--line-height: 1.05;
+  --text-4xl--letter-spacing: -0.035em;
+  --text-5xl: 64px;
+  --text-5xl--line-height: 1;
+  --text-5xl--letter-spacing: -0.04em;
+
+  /* The one tracking value that is not implied by a size: uppercase labels,
+     which need opening out rather than tightening. */
+  --tracking-eyebrow: 0.08em;
+
+  /*
+    One radius scale, by role rather than by size:
+      sm  inline cells inside a card    (a numpy cell; 8px on a 20px box is a pill)
+      md  chips and menu items
+      lg  buttons, inputs, nav items -- anything the pointer targets
+      xl  containers: panels, cards, dialogs
+  */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+
+  /*
+    Control heights. Four, and every interactive box in the app is one of them
+    -- a toolbar where a 28px chip sits beside a 32px button is the kind of
+    thing nobody consciously notices and everybody feels.
+
+    Named rather than left as h-8/h-9, because `h-control-md` says which
+    decision is being made and `h-9` says 36.
+  */
+  --spacing-control-sm: 32px;
+  /* Forms get the taller step: a 32px field is comfortable to click and
+     slightly mean to type in. */
+  --spacing-control-md: 36px;
+  /* Marketing weight. The app never needs it. */
+  --spacing-control-lg: 44px;
+  --spacing-bar: 56px;
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
@@ -96,23 +183,15 @@ body {
     var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--text-base);
+  line-height: 1.54;
   letter-spacing: -0.011em;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-/* Optical tightening: the larger the type, the more the default tracking
-   reads as loose. */
-h1,
-h2,
-h3 {
-  letter-spacing: -0.022em;
-}
-h1 {
-  letter-spacing: -0.035em;
+  /* Inter ships size-specific outlines; at 10-13px the difference between
+     using them and not is the difference between crisp and slightly muddy. */
+  font-optical-sizing: auto;
 }
 
 /* Tabular figures everywhere numbers are read as data, not prose. */
@@ -120,7 +199,84 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Scrollbars: present but quiet. */
+/*
+  The four shared recipes.
+
+  Each one existed already as an inline string copied between components, and
+  each had drifted: five cards carried the border-and-surface pair without the
+  inner highlight the sixth had, and the same uppercase label was written with
+  three different letter-spacings. A utility is the only version of "these are
+  the same thing" that stays true.
+*/
+
+/* A container: panel, card, dialog. The inset hairline catches the page's
+   light source along the top edge, which is what separates a card from the
+   canvas without a drop shadow under it. */
+@utility card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/*
+  The label above a group.
+
+  Deliberately does NOT set a colour. Nearly every eyebrow is `ink-faint` and
+  baking that in would save a class, but one of them is `accent` -- and a
+  custom utility that sets `color` sorts after `text-*` in the utilities layer,
+  so the exception would silently lose. Explicit at the call site instead.
+*/
+@utility eyebrow {
+  font-size: var(--text-2xs);
+  line-height: 1.4;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+/*
+  Inputs and selects.
+
+  Focus is a border that brightens plus a hairline ring inside it -- the
+  outline treatment below would sit 2px off the edge and read as a second,
+  looser box around an element that already has one.
+
+  Carries no height and no font-size, for the same cascade reason as `eyebrow`:
+  both are things a call site legitimately varies (a toolbar select is 32px, a
+  form select is 36px), and a utility that sets them would win the sort.
+*/
+@utility field {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  transition:
+    border-color 150ms var(--ease-standard),
+    box-shadow 150ms var(--ease-standard),
+    background-color 150ms var(--ease-standard);
+
+  &::placeholder {
+    color: var(--color-ink-faint);
+  }
+  &:hover:not(:disabled) {
+    border-color: var(--color-border-strong);
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+    box-shadow: inset 0 0 0 1px
+      color-mix(in oklab, var(--color-accent) 22%, transparent);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+/*
+  Scrollbars: present but quiet.
+*/
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -139,7 +295,8 @@ h1 {
   background-clip: content-box;
 }
 
-/* One focus treatment: a thin accent outline, never a glow. */
+/* One focus treatment for everything that is not a field: a thin accent
+   outline, never a glow. */
 :focus-visible {
   outline: 1px solid color-mix(in oklab, var(--color-accent) 75%, transparent);
   outline-offset: 2px;

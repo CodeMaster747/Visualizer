@@ -16,25 +16,35 @@ import type { ButtonHTMLAttributes } from "react";
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
+/*
+ * Every variant walks the same ladder on press: hover lifts one step, active
+ * settles one step back down. No scale transform -- a button that shrinks
+ * under the cursor is a 2015 tell.
+ */
 const VARIANT: Record<Variant, string> = {
   // Light on dark. In a monochrome interface the brightest surface is the
   // strongest call to action available, and it needs no colour to say so.
   primary:
-    "bg-ink text-on-accent hover:bg-white disabled:hover:bg-ink",
+    "bg-ink text-on-accent hover:bg-white active:bg-accent disabled:hover:bg-ink",
   secondary:
-    "border border-border bg-surface-2 text-ink hover:border-border-strong hover:bg-surface-3",
-  ghost: "text-ink-dim hover:bg-surface-2 hover:text-ink",
+    `border border-border bg-surface-2 text-ink hover:border-border-strong
+     hover:bg-surface-3 active:bg-surface-4`,
+  ghost: "text-ink-dim hover:bg-surface-2 hover:text-ink active:bg-surface-3",
 };
 
 const SIZE: Record<Size, string> = {
-  sm: "h-8 gap-1.5 px-3 text-[12px]",
-  md: "h-9 gap-2 px-4 text-[13px]",
+  sm: "h-control-sm gap-1.5 px-3 text-sm",
+  md: "h-control-md gap-2 px-4 text-base",
   // Marketing weight. The app never needs this; a hero CTA at 36px does not
   // read as the one thing on the screen to press.
-  lg: "h-11 gap-2 px-6 text-[14px]",
+  lg: "h-control-lg gap-2 px-6 text-md",
 };
 
-const ICON_SIZE: Record<Size, string> = { sm: "h-8 w-8", md: "h-9 w-9", lg: "h-11 w-11" };
+const ICON_SIZE: Record<Size, string> = {
+  sm: "h-control-sm w-control-sm",
+  md: "h-control-md w-control-md",
+  lg: "h-control-lg w-control-lg",
+};
 
 const BASE = `inline-flex shrink-0 items-center justify-center rounded-lg font-medium
               transition-[background-color,border-color,color] duration-150
