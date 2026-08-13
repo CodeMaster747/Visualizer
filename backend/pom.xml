@@ -63,10 +63,13 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
-        <!-- Validates Entra External ID access tokens. This starter is inert
-             until an issuer URI is configured (see SecurityConfig): on a build
-             with no Azure tenant the filter chain permits everything, which is
-             what keeps local development and the test suite unauthenticated. -->
+        <!-- Spring Security plus the Nimbus JOSE plumbing, which is what signs
+             and verifies the app's own access tokens (com.visualizer.auth).
+             Nothing here talks to an external identity provider: the resource
+             server is pointed at a local HMAC key rather than an issuer URI, so
+             this brings the JWT encoder/decoder and the filter chain and no
+             network dependency. BCrypt arrives with it too, via
+             spring-security-crypto. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>

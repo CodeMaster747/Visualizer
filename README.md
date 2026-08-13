@@ -17,12 +17,12 @@ datasets**.
 | `tracer-python/` — `sys.monitoring` tracer + FastAPI service | done, 37 tests |
 | `tracer-java/` — JDI tracer + HTTP service | done, 15 tests |
 | `tracer-node/` — V8 inspector tracer for JS + TS + HTTP service | done, 28 tests |
-| `backend/` — Spring Boot orchestrator: cache, rate limit, Groq narration | done, 26 tests |
+| `backend/` — Spring Boot orchestrator: cache, rate limit, accounts, Groq narration | done, 93 tests |
 | `infra/` — Docker Compose, Caddy, gVisor + Oracle setup | done |
 | Codebase-visualization section | not started (phase 2) |
 
 Snippet visualization is complete for **Python, Java, JavaScript and
-TypeScript**, deployable to a single VM. 140 tests pass across the six suites.
+TypeScript**, deployable to a single VM. 240 tests pass across the six suites.
 
 ## Running it
 
@@ -67,11 +67,17 @@ shown disabled rather than hidden, so its absence is legible.
 
 The **Codebase** section is a routed placeholder — phase 2, not built yet.
 
-There is still no account *service*. Sign-in collects a name and an email,
-stores them next to the preferences and recent runs already in this browser,
-and asks for no password — so the workspace has a real session boundary
-without any surface pretending there is a server behind it. `store/account.ts`
-is the one file that changes when real auth arrives.
+Accounts are self-hosted and need no setup: register with an email and a
+password, and the API stores the account (BCrypt) and issues a JWT it signs and
+verifies itself. `/api/**` requires that token, unconditionally — there is no
+configuration that turns authentication off and none that turns it on, which is
+the point. The browser bundle learns nothing about auth at build time, so the
+two halves cannot be configured differently.
+
+Set `VISUALIZER_AUTH_SECRET` in anything long-lived; leave it empty and a key is
+generated on first boot and kept in the backend's data directory, which survives
+restarts but not a redeploy that replaces the filesystem. See
+[`.env.example`](.env.example).
 
 ## Tests
 
@@ -79,8 +85,8 @@ is the one file that changes when real auth arrives.
 cd tracer-python && .venv/bin/python -m pytest tests/ -q   # 37 — tracer + snapshotter
 cd tracer-java   && mvn test                               # 15 — JDI tracer (launches JVMs)
 cd tracer-node   && npm test                               # 28 — CDP tracer (launches node)
-cd backend       && mvn test                               # 26 — cache, rate limit, narration
-cd frontend      && npx vitest run                         # 34 — diff logic, routing, app shell
+cd backend       && mvn test                               # 93 — cache, rate limit, accounts, narration
+cd frontend      && npx vitest run                         # 67 — diff logic, routing, auth, app shell
 .venv-tools/bin/python schema/validate_fixtures.py         # fixtures vs schema
 ```
 
@@ -175,29 +181,46 @@ one call per step. It is:
   transient outage must not permanently disable narration for a trace);
 - **fail-soft** — no key, a timeout, or junk output just leaves the strip empty.
 
+### Accounts
+
+Self-hosted, because the alternative was worse. An earlier version used Entra
+External ID, which meant the browser and the API each had to be told about the
+tenant separately — and configuring one without the other produced a sign-in
+screen that worked followed by a 401 on every request, with signing in again the
+one thing that could never help. Nothing here is configurable in that way.
+
+- **Registration and sign-in** live in `com.visualizer.auth`. Passwords are
+  BCrypt at strength 10 — not higher, because 0.1 vCPU pays for extra rounds in
+  seconds of someone's sign-in. Login hashes even when the address is unknown,
+  so "no such account" and "wrong password" cannot be told apart by timing.
+- **Tokens** are HS256, signed and verified by the same process, valid 12 hours,
+  with no refresh token: the session simply ends. Rate limiting keys on the
+  token subject rather than the IP, so people behind one NAT stop sharing a
+  bucket, and `/api/auth/login` is rate limited too, which is what keeps the one
+  unauthenticated door from being a free guessing oracle.
+- **Users** are a JSON file with an in-memory index (`FileUserStore`), behind a
+  `UserStore` interface for the same reason `TraceArchive` is one. A database is
+  the reflex and the wrong one here: Hibernate would cost seconds of a cold
+  start already measured in minutes, to manage a table read once per sign-in.
+  The honest caveat is durability — the file survives restarts and sleeps, but
+  not a redeploy that replaces the container filesystem, so on Render accounts
+  are lost per deploy unless the data directory is a mounted disk.
+
 ### Azure (optional)
 
-Two integrations, each independently switched on by configuration and each
-degrading to the previous behaviour when absent. See
-[`infra/azure/README.md`](infra/azure/README.md) for setup and
+**Blob Storage** is a durable tier *behind* the Caffeine cache, not a
+replacement for it. The SHA-256 that already keys the cache becomes the blob
+name, so writes are idempotent and uploads are create-only (`If-None-Match: *`)
+— a re-run of the same snippet costs no write. What it buys is share links that
+survive a restart, which on a free instance that sleeps after 15 minutes idle is
+the difference between a link working and not. Archive failures degrade to a
+cache miss and can never fail a run.
+
+See [`infra/azure/README.md`](infra/azure/README.md) for setup and
 [`infra/azure/MIGRATION.md`](infra/azure/MIGRATION.md) for moving to a new
 subscription; [`infra/azure/provision.sh`](infra/azure/provision.sh) automates
-the mechanical parts of both.
-
-- **Blob Storage** is a durable tier *behind* the Caffeine cache, not a
-  replacement for it. The SHA-256 that already keys the cache becomes the blob
-  name, so writes are idempotent and uploads are create-only (`If-None-Match:
-  *`) — a re-run of the same snippet costs no write. What it buys is share
-  links that survive a restart, which on a free instance that sleeps after 15
-  minutes idle is the difference between a link working and not. Archive
-  failures degrade to a cache miss and can never fail a run.
-- **Entra External ID** replaces the local-profile sign-in with OIDC
-  (authorization code + PKCE in the browser, JWT validation in Spring Security,
-  audience checked as well as issuer). Rate limiting then keys on the token
-  subject rather than the IP, so people behind one NAT stop sharing a bucket.
-
-With neither configured the app is exactly what it was before: local sign-in,
-in-memory cache, no Azure code path reached, full test suite green.
+the mechanical parts of both. Unconfigured, no Azure code path is reached and
+the full test suite is green.
 
 ### Sandboxing
 

@@ -16,7 +16,14 @@ WORKDIR /app
 COPY --from=build /build/target/visualizer-backend-*.jar app.jar
 
 # Run unprivileged.
-RUN useradd --uid 10002 --create-home app
+#
+# /app/data holds the account file and the generated signing key, so it has to
+# be writable by this user -- WORKDIR itself is root-owned and deliberately
+# stays that way. Mount a volume over it (docker-compose does) and accounts
+# outlive the container; leave it and they last as long as the container does.
+RUN useradd --uid 10002 --create-home app \
+ && mkdir -p /app/data \
+ && chown app:app /app/data
 USER app
 
 EXPOSE 8080

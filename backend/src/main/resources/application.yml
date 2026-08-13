@@ -34,6 +34,20 @@ visualizer:
   rate-limit:
     runs-per-minute: 20
     burst: 8
+  auth:
+    # Signs the access tokens this API issues and accepts. Unlike the blocks
+    # above, nothing here has to be set for authentication to work: leave the
+    # secret empty and one is generated on first boot and saved under data-dir,
+    # so a fresh clone has working sign-up and restarts do not sign anyone out.
+    #
+    # Set it in production. A generated key lives in the container's filesystem
+    # and a redeploy replaces that, which would sign every user out; an explicit
+    # secret survives. Generate one with `openssl rand -base64 32`.
+    secret: ${VISUALIZER_AUTH_SECRET:}
+    # Holds users.json and the generated key. Must be writable by the process
+    # user -- both Dockerfiles create it and chown it accordingly.
+    data-dir: ${VISUALIZER_AUTH_DATA_DIR:data}
+    token-ttl-minutes: ${VISUALIZER_AUTH_TOKEN_TTL_MINUTES:720}
   azure:
     storage:
       # Empty by default -> traces are cached in memory only, exactly as before
@@ -42,12 +56,6 @@ visualizer:
       # it only ever comes from the environment.
       connection-string: ${AZURE_STORAGE_CONNECTION_STRING:}
       container: ${AZURE_STORAGE_CONTAINER:traces}
-    auth:
-      # Empty by default -> the API is unauthenticated, which is what keeps
-      # local development and the test suite working without a tenant. Set both
-      # to require an Entra External ID token on /api/**.
-      issuer-uri: ${VISUALIZER_AZURE_AUTH_ISSUER_URI:}
-      audience: ${VISUALIZER_AZURE_AUTH_AUDIENCE:}
 
 management:
   endpoints:

@@ -19,18 +19,11 @@ COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
 
-# Vite inlines import.meta.env at compile time, so Entra config has to arrive as
-# build args rather than runtime environment. Render passes a service's
-# environment variables to `docker build` as build args, so declaring them here
-# is all that is needed; unset, the SPA uses local-profile sign-in. See
-# infra/azure/README.md.
-ARG VITE_AZURE_CLIENT_ID=""
-ARG VITE_AZURE_AUTHORITY=""
-ARG VITE_AZURE_API_SCOPE=""
-ENV VITE_AZURE_CLIENT_ID=$VITE_AZURE_CLIENT_ID \
-    VITE_AZURE_AUTHORITY=$VITE_AZURE_AUTHORITY \
-    VITE_AZURE_API_SCOPE=$VITE_AZURE_API_SCOPE
-
+# No build args. The SPA has no compile-time knowledge of how authentication is
+# configured -- it posts to /api/auth and reads what comes back -- so this image
+# is identical whatever the backend's auth settings are. That is deliberate:
+# when the two halves were configured separately, building one without the other
+# produced a bundle that offered a sign-in and then 401ed every request it made.
 RUN npm run build
 
 # --- tracer-node's runtime dependencies ------------------------------------
@@ -92,10 +85,12 @@ COPY --from=spa /app/dist ./www
 COPY infra/render/Caddyfile /etc/caddy/Caddyfile
 COPY infra/render/supervisord.conf /etc/supervisord.conf
 
-# Traced code runs as this user, never root.
+# Traced code runs as this user, never root. /srv/data is where the backend
+# keeps accounts and its generated signing key, so it needs to be writable by
+# the same user everything runs as here.
 RUN useradd --create-home --uid 10001 tracer \
- && mkdir -p /tmp/runs-python /tmp/runs-node \
- && chown -R tracer:tracer /tmp/runs-python /tmp/runs-node
+ && mkdir -p /tmp/runs-python /tmp/runs-node /srv/data \
+ && chown -R tracer:tracer /tmp/runs-python /tmp/runs-node /srv/data
 
 ENV MPLBACKEND=Agg \
     PYTHONDONTWRITEBYTECODE=1 \

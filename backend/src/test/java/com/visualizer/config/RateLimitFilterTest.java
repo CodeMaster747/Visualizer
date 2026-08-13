@@ -24,7 +24,8 @@ class RateLimitFilterTest {
                 new AppProperties.Tracers(Map.of("python", "http://x")),
                 new AppProperties.Groq("", "http://x", "m", 45, 25),
                 new AppProperties.RateLimit(20, 8),
-                AppProperties.Azure.disabled());
+                AppProperties.Azure.disabled(),
+                AppProperties.Auth.defaults());
         return new RateLimitFilter(props);
     }
 

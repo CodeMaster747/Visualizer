@@ -1,17 +1,30 @@
 # Azure integration
 
-Two independent, optional integrations:
+One optional integration:
 
 | | What it adds | Where it plugs in |
 |---|---|---|
 | **Blob Storage** | Traces outlive a restart, so a shared link keeps resolving | `TraceArchive` behind the Caffeine cache |
-| **Entra External ID** | Real sign-in and a real API boundary, replacing the local profile | `SecurityConfig` + MSAL in the SPA |
 
-**Neither is required.** With every variable unset the app is byte-for-byte the
-one that ran before Azure existed: sign-in is a local profile, traces are cached
-in memory, and no Azure SDK code path is reached. That is a supported
-configuration, not a degraded one — `docker compose up`, `mvn test` and a laptop
-with no Azure account all depend on it. Turn them on one at a time.
+**It is not required.** With every variable unset the app is byte-for-byte the
+one that ran before Azure existed: traces are cached in memory and no Azure SDK
+code path is reached. That is a supported configuration, not a degraded one —
+`docker compose up`, `mvn test` and a laptop with no Azure account all depend
+on it.
+
+> **Sign-in used to be here too, and deliberately is not any more.**
+>
+> Authentication was Entra External ID, which meant the SPA and the API each had
+> to be told about the tenant separately — the SPA at *build* time, because Vite
+> inlines `import.meta.env`. Configure one without the other and you got a
+> sign-in screen that worked followed by a 401 on every request, with signing in
+> again the one action that could not possibly help. A lapsed tenant did the
+> same thing while `/api/health` stayed green, so nothing alerted.
+>
+> Accounts are now self-hosted in `com.visualizer.auth`: the API stores users
+> and signs its own tokens. Nothing about it is configurable from the browser,
+> so the two halves cannot disagree, and no Azure subscription can take sign-in
+> down with it. See the Accounts section of the root [README](../../README.md).
 
 **Setting this up on a new subscription?** [`provision.sh`](provision.sh) does
 the mechanical parts, and [`MIGRATION.md`](MIGRATION.md) is the step-by-step
@@ -22,19 +35,16 @@ explains what each piece is and why; that one is the sequence to follow.
 
 ## Cost
 
-Both integrations are chosen to sit inside always-free limits at this project's
-scale, not to be paid for out of trial credit:
+Chosen to sit inside always-free limits at this project's scale, not to be paid
+for out of trial credit:
 
 - **Blob Storage** bills for stored bytes and transactions. Traces are small
   JSON documents and, being content-addressed, are written once and never
   updated — so a re-run of the same snippet is not a billed write. Expect
   cents per month.
-- **External ID** bills per monthly active user above a free tier. A personal
-  project is comfortably inside it.
 
 Prices and free-tier limits change, so confirm against
-[Azure pricing](https://azure.microsoft.com/pricing/) and
-[External ID pricing](https://aka.ms/ExternalIDPricing) rather than trusting the
+[Azure pricing](https://azure.microsoft.com/pricing/) rather than trusting the
 numbers in a README.
 
 Set a **budget alert** at $1 on the subscription anyway. It costs nothing and it
@@ -83,32 +93,27 @@ once the subscription is disabled, reactivating it means a support request.
 Two options, both legitimate:
 
 **Upgrade to pay-as-you-go.** Needs a card. Ongoing cost for this project is
-well under a dollar a month: External ID stays inside its free MAU tier
-indefinitely, and a few megabytes of trace blobs bills fractions of a cent once
-the 12-month storage grant ends (that grant runs from your original sign-up
-date, so upgrading does not extend it). Choose this if you want the live demo to
-keep showing sign-in.
+well under a dollar a month: a few megabytes of trace blobs bills fractions of a
+cent once the 12-month storage grant ends (that grant runs from your original
+sign-up date, so upgrading does not extend it). Choose this if you want shared
+links on the live demo to keep resolving.
 
 **Let it lapse and fall back.** The app is built to run with no Azure at all, so
-the deployment keeps working — local-profile sign-in, in-memory cache, no
-errors. You lose durable share links, and the integration lives on in the code
-and in this document, which is what a reviewer actually reads. Costs nothing.
+the deployment keeps working — in-memory cache, no errors. You lose durable
+share links, and the integration lives on in the code and in this document,
+which is what a reviewer actually reads. Costs nothing.
 
-> **If you let it lapse, unset the auth variables. This part is not symmetric.**
+> **Letting it lapse is now safe in every direction, which it once was not.**
 >
 > Storage failing is safe by design: the archive degrades to a cache miss and a
-> run still succeeds. **Authentication failing is not.** With
-> `VISUALIZER_AZURE_AUTH_ISSUER_URI` still set but the tenant gone, token
-> validation fails and every `/api/**` call returns 401 — behind a sign-in
-> button that can no longer complete. `/api/health` stays public, so the
-> platform health check goes on passing and nothing alerts you. The app is
-> bricked and looks fine.
+> run still succeeds. Authentication used to be the exception — a lapsed tenant
+> with the issuer still configured 401ed every `/api/**` call while
+> `/api/health` kept the platform's health check green, so the app was bricked
+> and looked fine. Accounts no longer depend on Azure at all, so there is
+> nothing left here that can take sign-in down.
 >
-> Clear `VISUALIZER_AZURE_AUTH_ISSUER_URI`, `VISUALIZER_AZURE_AUTH_AUDIENCE` and
-> the three `VITE_AZURE_*` values, then redeploy. The `VITE_` ones are compiled
-> into the bundle, so this needs a rebuild — on Render, changing an environment
-> variable triggers one automatically. `AZURE_STORAGE_CONNECTION_STRING` is safe
-> to leave set, though clearing it saves a pointless failing call per cache miss.
+> `AZURE_STORAGE_CONNECTION_STRING` is safe to leave set, though clearing it
+> saves a pointless failing call per cache miss.
 
 ---
 
@@ -201,190 +206,7 @@ it says the trace expired and offers the editor.
 
 ---
 
-## Part 2 — Entra External ID
-
-External ID (the CIAM product) is the right fit rather than plain Entra ID:
-anyone should be able to sign up for a public tool, which is what an *external*
-tenant is for. A workforce tenant would mean hand-inviting every user.
-
-### Pre-flight: can you create a tenant at all?
-
-**Do this before anything else.** Creating an external tenant needs the
-[Tenant Creator](https://learn.microsoft.com/entra/external-id/customers/quickstart-tenant-setup)
-role scoped to your subscription. If your Azure account is a university address,
-it lives in **your university's Entra tenant**, and universities very commonly
-switch off tenant creation for non-admins. You cannot work around that from your
-side — it is enforced above you.
-
-Check which directory you are actually in:
-
-```bash
-az login
-az account show --query "{subscription:name, tenant:tenantId, user:user.name}" -o table
-```
-
-If `user` is `you@youruniversity.edu`, assume the restriction may apply. The
-definitive test takes a minute and is worth doing before you configure anything:
-
-1. [entra.microsoft.com](https://entra.microsoft.com) → **Entra ID → Overview →
-   Manage tenants → Create**
-2. Pick **External** and try to proceed.
-
-If it refuses, or **Create** is greyed out, tenant creation is blocked. Take the
-fallback below rather than fighting it — asking a university admin to grant
-Tenant Creator on a personal project is rarely a fight worth having, and the
-fallback demonstrates the same protocol work.
-
-### Fallback: a workforce tenant app registration
-
-If external tenants are blocked, register the app **in the directory you already
-have**. You get real OIDC — the same authorization code + PKCE flow, the same
-JWT validation, the same code — with one limitation: only accounts from that
-directory can sign in, rather than anyone on the internet.
-
-**No application code changes.** Only the two authority-shaped values differ:
-
-```
-VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/<tenant-id>
-VISUALIZER_AZURE_AUTH_ISSUER_URI=https://login.microsoftonline.com/<tenant-id>/v2.0
-```
-
-Everything else — client id, exposed scope, audience, redirect URIs — is
-identical to the steps below; skip *Create the tenant* and *Create a user flow*
-(user flows are an external-tenant feature; a workforce tenant signs in existing
-directory accounts directly). `lib/auth.ts` derives `knownAuthorities` from
-whatever authority you give it, so both hosts work unchanged.
-
-If **App registrations → New registration** is *also* blocked, your directory has
-disabled app registration for regular users too. At that point Part 2 is not
-available to you on this account, and the honest move is to ship Part 1 alone —
-the Blob Storage work stands perfectly well on its own.
-
-### Create the tenant
-
-An external tenant is **separate from your default directory**. In the
-[Microsoft Entra admin center](https://entra.microsoft.com):
-
-1. **Entra ID → Overview → Manage tenants → Create**
-2. Choose **External**, then name it (e.g. `visualizer`). The subdomain you pick
-   becomes `<subdomain>.ciamlogin.com`.
-3. **Link it to your subscription.** Home → **Billing** → *Click here to
-   upgrade* → **Add Subscription**. External ID requires this for billing, and
-   an unlinked tenant will bite you later rather than immediately.
-
-### Register the application
-
-Switch to the external tenant first (Settings icon → **Directories +
-subscriptions** → *Switch*), or you will register the app in the wrong
-directory and spend an hour wondering why the authority 404s.
-
-1. **App registrations → New registration**
-   - Supported account types: **Accounts in this organizational directory only**
-     (external tenants only support single-tenant).
-   - Platform: **Single-page application (SPA)**
-   - Redirect URI: `http://localhost:5173` for development. Add the production
-     origin (e.g. `https://visualizer-igxk.onrender.com`) as a second SPA
-     redirect URI later — the origin only, no path, because the app is
-     configured with `redirectUri: window.location.origin`.
-2. Record the **Application (client) ID**.
-3. **Expose an API → Add a scope.** Accept the default
-   `api://<client-id>` application ID URI, then create a scope named
-   `Trace.Run`, admin-consent only.
-4. **API permissions → Add a permission → My APIs →** your own app **→
-   `Trace.Run`**. Then **Grant admin consent**.
-
-That last step is not optional and is the step people skip. In an external
-tenant, users cannot consent to permissions for themselves — an admin must
-consent on their behalf, or every sign-in fails at the consent screen.
-
-One app registration serves as both the SPA and the API here. Splitting them is
-the textbook arrangement and is worth doing if you want the practice, but for a
-single SPA calling a single backend it adds a second registration to keep in
-sync and changes nothing about the security properties.
-
-### Create a user flow
-
-**External Identities → User flows → New user flow.** Enable *Email with
-password* (and Google or Apple federation if you like), then associate the
-application you just registered. Without this, the tenant has no sign-up
-experience and the redirect dead-ends.
-
-### Configure the app
-
-Find the issuer — read it from the discovery document rather than assembling it
-by hand, because a mismatched trailing path is the most common cause of a 401
-that looks like nothing is wrong:
-
-```bash
-curl -s "https://<subdomain>.ciamlogin.com/<tenant-id>/v2.0/.well-known/openid-configuration" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['issuer'])"
-```
-
-Then in `.env`:
-
-```
-# Backend: which tokens to accept
-VISUALIZER_AZURE_AUTH_ISSUER_URI=<the issuer value printed above>
-VISUALIZER_AZURE_AUTH_AUDIENCE=<application (client) ID>
-
-# Frontend: compiled into the bundle by Vite
-VITE_AZURE_CLIENT_ID=<application (client) ID>
-VITE_AZURE_AUTHORITY=https://<subdomain>.ciamlogin.com/<tenant-id>
-VITE_AZURE_API_SCOPE=api://<application (client) ID>/Trace.Run
-```
-
-Set the backend pair and the frontend trio **together**. Backend-only locks out a
-frontend that has no way to obtain a token; frontend-only sends tokens nothing
-checks.
-
-The three `VITE_` values are not secrets. A browser application cannot hold a
-client secret, which is exactly why this uses authorization code flow with PKCE.
-
-### Verify
-
-Because Vite inlines `import.meta.env` at build time, a rebuild is required —
-restarting is not enough:
-
-```bash
-docker compose up --build -d
-```
-
-Backend logs should say:
-
-```
-API authentication enabled: validating tokens from https://...
-```
-
-Then:
-
-1. `/login` shows **Continue with Microsoft** instead of the local form.
-2. Signing up and back in lands you on `/app`.
-3. `curl -i http://localhost/api/trace -X POST -H 'Content-Type: application/json' -d '{"language":"python","source":"x=1"}'`
-   returns **401** — the API is genuinely closed, not just visually gated.
-4. `curl -i http://localhost/api/health` still returns **200**, so the platform's
-   health probe keeps working.
-
----
-
 ## Troubleshooting
-
-**`AADSTS500011` / unknown authority** — the authority host is not in
-`knownAuthorities`. `lib/auth.ts` derives it from the authority URL, so this
-means `VITE_AZURE_AUTHORITY` is malformed. It must be a full URL with scheme.
-
-**401 with a token that looks valid** — decode it at [jwt.ms](https://jwt.ms)
-and compare `iss` against `VISUALIZER_AZURE_AUTH_ISSUER_URI` character for
-character, then `aud` against `VISUALIZER_AZURE_AUTH_AUDIENCE`. These two
-mismatches account for almost every case, and the audience one is silent if you
-left the audience blank — the backend logs a warning at startup when you do.
-
-**Frontend changes not taking effect** — Vite inlines env vars at build time.
-`docker compose restart` will never pick them up; `docker compose build` is
-required.
-
-**Sign-in redirects then bounces back to `/login`** — usually a redirect URI
-registered as **Web** rather than **SPA**. A Web platform issues no CORS headers
-for the token endpoint, so the code exchange fails silently in the browser.
 
 **`Trace archive read failed`** in the logs — the app is working as designed:
 archive failures degrade to a cache miss and the run proceeds. Check the
@@ -396,19 +218,20 @@ connection string and that the account has not been deleted.
 
 For a résumé or an interview, the parts worth being able to talk about:
 
-- **OAuth 2.0 / OIDC end to end** — authorization code flow with PKCE in the
-  browser, a Spring Security resource server validating the resulting JWT
-  against the tenant's JWKS, with explicit audience validation on top of issuer
-  validation (`SecurityConfigTest` covers why issuer-only is not enough).
 - **Content-addressed object storage** — the SHA-256 that already keyed the
   cache becomes the blob name, which makes writes idempotent, makes
   create-only uploads (`If-None-Match: *`) the correct semantics, and turns
   cache-sharing and link-sharing into the same feature.
-- **Optional-dependency design** — every Azure integration degrades to the
+- **Optional-dependency design** — the Azure integration degrades to the
   pre-Azure behaviour instead of failing, and the test suite runs with no cloud
   account. This is the part most worth defending in an interview: the archive
   cannot fail a run, and `TraceServiceTest` pins that.
 - **Cost-aware engineering** — LRS over GRS for recomputable data, a lifecycle
-  rule to cap storage, rate limiting extended to the endpoint that bills a
-  storage transaction, and MSAL code-split out of the main bundle so a
-  deployment without a tenant does not ship 270 kB it will never execute.
+  rule to cap storage, and rate limiting extended to the endpoint that bills a
+  storage transaction.
+- **Knowing when to stop depending on a cloud** — sign-in was here and was
+  removed, because a managed identity provider bought this app nothing it could
+  not do itself and introduced a failure mode where one misconfigured half
+  locked every user out of a working backend. That decision, and the trade it
+  accepts (no email verification, no social login), is the most honest thing in
+  this document.

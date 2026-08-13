@@ -57,7 +57,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         if ("POST".equals(method)) {
-            return !(path.equals("/api/trace") || path.equals("/api/narrate"));
+            // The two expensive endpoints, plus the two that hand out tokens.
+            // Those last two are the only unauthenticated way into the API, so
+            // without a limit here the login endpoint is a password-guessing
+            // oracle that answers as fast as BCrypt allows. They share the
+            // caller's bucket rather than getting their own, which means an
+            // attacker spending it on guesses has none left to run code with.
+            return !(path.equals("/api/trace")
+                    || path.equals("/api/narrate")
+                    || path.equals("/api/auth/login")
+                    || path.equals("/api/auth/register"));
         }
         // Reading a shared trace is cheap here but bills a transaction against
         // the storage account on a local miss, so it is limited too -- generously,
@@ -93,8 +102,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * for many people, so a single busy user throttles a whole building; the
      * reverse also holds, since one person on a phone can rotate addresses to
      * shed a bucket. A subject is neither shared nor cheap to rotate -- getting
-     * a second one means completing a second sign-up against the identity
-     * provider, which is exactly the cost we want an abuser to pay.
+     * a second one means registering a second account, which is itself rate
+     * limited, so the cheapest way to double your quota is to spend part of it.
      *
      * Anonymous callers keep the old IP behaviour, so this is strictly an
      * improvement for signed-in users rather than a new barrier. The prefixes

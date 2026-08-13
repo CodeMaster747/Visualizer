@@ -1,213 +1,192 @@
 /**
- * Microsoft Entra External ID, behind a switch.
+ * Accounts, against this app's own API.
  *
- * Every Azure-specific thing the frontend knows lives in this file. The rest of
- * the app asks `isAuthConfigured()` and calls four functions; nothing else
- * imports MSAL, and no component branches on which identity provider is in play.
+ * Everything the frontend knows about authentication lives in this file: two
+ * endpoints, one token, and the claims inside it. No identity provider, no SDK,
+ * and -- the part that matters most -- no build-time configuration. An earlier
+ * version of this file wrapped MSAL and read three `VITE_AZURE_*` variables that
+ * Vite inlined at compile time, which meant the browser and the API were
+ * configured separately and could disagree: build the bundle without them while
+ * the API required a token and you got a sign-in screen that worked followed by
+ * a 401 on every request, with no way for the user to recover by signing in
+ * again. There is nothing to configure here now, so there is nothing to get out
+ * of step.
  *
- * The switch matters as much as the integration. Three of this project's four
- * ways to run it -- a laptop, `docker compose up`, and the Render container --
- * have no tenant behind them, and all three must keep working. So when the env
- * vars are absent every function here is a no-op and the app falls back to the
- * local-profile sign-in it has always had. Configuring a tenant is what turns
- * real authentication on, and it is the only thing that does.
- *
- * @see store/account.ts, which owns "who is signed in" either way.
+ * @see store/account.ts, which owns "who is signed in".
  */
-
-// Types only -- erased at compile time, so importing them costs no bytes and
-// does not defeat the code splitting below.
-import type {
-  PublicClientApplication,
-  AccountInfo,
-  AuthenticationResult,
-} from "@azure/msal-browser";
 
 /**
- * Set all three at build time to enable Azure sign-in. They are Vite env vars,
- * so they are baked into the bundle and therefore public -- which is correct
- * and by design: a SPA client id and authority are not secrets, and the flow
- * below is PKCE precisely so that no secret is needed in the browser.
- */
-const CLIENT_ID = import.meta.env.VITE_AZURE_CLIENT_ID as string | undefined;
-const AUTHORITY = import.meta.env.VITE_AZURE_AUTHORITY as string | undefined;
-const API_SCOPE = import.meta.env.VITE_AZURE_API_SCOPE as string | undefined;
-
-export function isAuthConfigured(): boolean {
-  return Boolean(CLIENT_ID && AUTHORITY && API_SCOPE);
-}
-
-/**
- * Hosts MSAL already trusts via Microsoft's instance discovery.
+ * The token lives in sessionStorage, so closing the tab ends the session.
  *
- * `knownAuthorities` exists to allowlist authorities that discovery does *not*
- * know about, which is why an External ID tenant on `*.ciamlogin.com` needs it
- * and a workforce tenant on `login.microsoftonline.com` does not. Declaring a
- * discoverable host anyway makes MSAL skip discovery for it, so this is not
- * merely redundant -- it opts out of the alias resolution that discovery would
- * otherwise do. Both tenant types are supported here (see infra/azure/README.md
- * on why a student account may only be able to use the workforce one), so the
- * distinction is made rather than guessed at.
+ * localStorage would keep people signed in across days, and on a shared machine
+ * that leaves a working credential behind for whoever sits down next. This app
+ * is not worth that trade. The tab-scoped copy is also the single source of
+ * truth for who is signed in -- nothing about the account is persisted anywhere
+ * else, which is what stops a stale profile from outliving the token that
+ * justified it.
  */
-const DISCOVERABLE_HOSTS = [
-  "login.microsoftonline.com",
-  "login.microsoftonline.us",
-  "login.partner.microsoftonline.cn",
-];
+const TOKEN_KEY = "viz.token.v1";
 
-export function knownAuthoritiesFor(authority: string): string[] {
-  const { host } = new URL(authority);
-  return DISCOVERABLE_HOSTS.includes(host.toLowerCase()) ? [] : [host];
-}
-
-/**
- * The claims we care about, extracted from an id token.
- *
- * External ID populates these differently depending on how the user signed up
- * -- an email sign-up fills `email`, a federated Google account may fill only
- * `preferred_username` -- so all the plausible spellings are tried rather than
- * trusting one.
- */
-export interface AzureIdentity {
+export interface Identity {
   name: string;
   email: string;
 }
 
-interface IdTokenClaims {
+/** The claims this app puts in a token. Anything else in there is ignored. */
+interface TokenClaims {
+  sub?: string;
   name?: string;
   email?: string;
-  preferred_username?: string;
-  emails?: string[];
+  exp?: number;
 }
 
-export function identityFrom(account: AccountInfo): AzureIdentity {
-  const claims = (account.idTokenClaims ?? {}) as IdTokenClaims;
-  const email =
-    claims.email ?? claims.emails?.[0] ?? claims.preferred_username ?? account.username ?? "";
-  return { name: claims.name ?? account.name ?? "", email };
-}
+export class AuthError extends Error {}
 
 /**
- * MSAL is loaded on demand, not bundled into the main chunk.
+ * Read a JWT's payload without verifying it.
  *
- * It is roughly 200 kB of JavaScript, and on a build with no tenant configured
- * not one line of it will ever run. Shipping it to every visitor of a
- * deployment that cannot use it is exactly the kind of cost that is invisible
- * until someone loads the page on a phone. The dynamic import makes Vite split
- * it into its own chunk, fetched only when a sign-in actually needs it.
+ * Safe, and worth being explicit about why: the signature is checked by the API
+ * on every request, and nothing here grants access. These claims decide what
+ * name to draw in the corner and whether to bother sending a token that has
+ * already expired. A forged token gets someone a wrong name in their own
+ * browser and a 401 from the server.
  */
-let msalModule: Promise<typeof import("@azure/msal-browser")> | null = null;
+export function decodeClaims(token: string): TokenClaims | null {
+  const payload = token.split(".")[1];
+  if (!payload) return null;
 
-function loadMsal(): Promise<typeof import("@azure/msal-browser")> {
-  return (msalModule ??= import("@azure/msal-browser"));
-}
-
-let client: PublicClientApplication | null = null;
-let initialized: Promise<void> | null = null;
-
-/** The initialised singleton. Safe to call repeatedly; only the first does work. */
-async function instance(): Promise<PublicClientApplication> {
-  const msal = await loadMsal();
-  client ??= new msal.PublicClientApplication({
-    auth: {
-      clientId: CLIENT_ID!,
-      authority: AUTHORITY!,
-      // Empty for a workforce tenant, the ciamlogin host for an External ID
-      // one. Without it, an External ID authority is rejected as unknown.
-      knownAuthorities: knownAuthoritiesFor(AUTHORITY!),
-      redirectUri: window.location.origin,
-      postLogoutRedirectUri: window.location.origin,
-    },
-    cache: {
-      // Session storage, so closing the tab ends the session. The alternative
-      // leaves a token in localStorage on what may well be a shared machine,
-      // and this app is not valuable enough to justify that trade.
-      cacheLocation: "sessionStorage",
-    },
-  });
-  initialized ??= client.initialize();
-  await initialized;
-  return client;
-}
-
-export interface AuthBootstrap {
-  account: AccountInfo | null;
-  /**
-   * Where the user was going before they were sent to sign in, present only on
-   * the load that completes a redirect. A full page navigation destroys router
-   * state, so this makes the round trip inside the token request itself.
-   */
-  returnTo?: string;
-}
-
-/**
- * Prepare MSAL and finish any sign-in that is mid-flight.
- *
- * Must be awaited before the app renders. A redirect flow lands back on the app
- * with the authorization code in the URL, and `handleRedirectPromise` is what
- * exchanges it -- render first and the router strips the code out of the URL
- * before MSAL ever sees it, which fails in a way that looks like the identity
- * provider is broken rather than like a load-order bug.
- */
-export async function initAuth(): Promise<AuthBootstrap> {
-  if (!isAuthConfigured()) return { account: null };
-
-  const msal = await instance();
-
-  let redirect: AuthenticationResult | null = null;
   try {
-    redirect = await msal.handleRedirectPromise();
+    // JWTs use base64url and drop the padding, neither of which atob accepts.
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    // Round-trip through percent-encoding so a non-ASCII name survives; atob
+    // alone yields one byte per character and mangles anything above U+007F.
+    const json = decodeURIComponent(
+      Array.from(atob(padded), (c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`).join(""),
+    );
+    return JSON.parse(json) as TokenClaims;
   } catch {
-    // A failed or abandoned sign-in leaves the user signed out, which the
-    // guard already handles. Better that than a blank page at startup.
-    redirect = null;
-  }
-
-  const account = redirect?.account ?? msal.getAllAccounts()[0] ?? null;
-  if (account) msal.setActiveAccount(account);
-  return { account, returnTo: redirect?.state || undefined };
-}
-
-/** Begin sign-in. Navigates away, so nothing after this call runs. */
-export async function signInWithAzure(returnTo?: string): Promise<void> {
-  const msal = await instance();
-  await msal.loginRedirect({
-    scopes: [API_SCOPE!],
-    // Survives the round trip so a deep link is not lost at the front door.
-    state: returnTo,
-  });
-}
-
-export async function signOutFromAzure(): Promise<void> {
-  const msal = await instance();
-  await msal.logoutRedirect({ account: msal.getActiveAccount() ?? undefined });
-}
-
-/**
- * An access token for the backend API, or null when Azure is not configured.
- *
- * Silent first: MSAL serves a cached token and refreshes it behind the scenes,
- * so the common case costs nothing. Only a genuinely expired session --
- * `InteractionRequiredAuthError`, which is MSAL's way of saying the user has to
- * be involved -- escalates to a redirect. Any other failure returns null and
- * lets the caller send an unauthenticated request, because a backend with auth
- * switched off will answer it fine and one with auth on will say 401 clearly.
- */
-export async function getAccessToken(): Promise<string | null> {
-  if (!isAuthConfigured()) return null;
-
-  const msal = await instance();
-  const account = msal.getActiveAccount() ?? msal.getAllAccounts()[0];
-  if (!account) return null;
-
-  try {
-    const result = await msal.acquireTokenSilent({ scopes: [API_SCOPE!], account });
-    return result.accessToken;
-  } catch (error) {
-    const { InteractionRequiredAuthError } = await loadMsal();
-    if (error instanceof InteractionRequiredAuthError) {
-      await msal.acquireTokenRedirect({ scopes: [API_SCOPE!], account });
-    }
     return null;
   }
+}
+
+/** Expiry is in seconds; a token without one is treated as unusable. */
+function isExpired(claims: TokenClaims): boolean {
+  return typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now();
+}
+
+function readStorage(): string | null {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    // Storage denied (Safari private mode, a hardened profile). Sign-in still
+    // works for the life of the page; it just will not survive a reload.
+    return null;
+  }
+}
+
+function writeStorage(token: string | null): void {
+  try {
+    if (token === null) sessionStorage.removeItem(TOKEN_KEY);
+    else sessionStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    /* see readStorage */
+  }
+}
+
+/**
+ * The token to send, or null.
+ *
+ * Expired tokens are dropped here rather than sent, which turns "your session
+ * expired" into something the app knows before it asks the server. Synchronous
+ * on purpose: there is no silent-refresh round trip to await, so callers do not
+ * have to be async to attach a credential.
+ */
+export function getAccessToken(): string | null {
+  const token = readStorage();
+  if (!token) return null;
+
+  const claims = decodeClaims(token);
+  if (!claims || isExpired(claims)) {
+    writeStorage(null);
+    return null;
+  }
+  return token;
+}
+
+/** Who the stored token says is signed in, or null if there is no live one. */
+export function currentIdentity(): Identity | null {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  const claims = decodeClaims(token);
+  if (!claims) return null;
+
+  return { name: claims.name ?? "", email: claims.email ?? "" };
+}
+
+/** Drop the local session. The server is stateless, so there is nothing to tell. */
+export function clearSession(): void {
+  writeStorage(null);
+}
+
+interface AuthResponseBody {
+  token?: string;
+  user?: Identity;
+}
+
+/**
+ * POST to an auth endpoint and turn whatever comes back into an identity or a
+ * thrown `AuthError` carrying a message worth showing.
+ *
+ * The API answers failures as RFC 9457 problem details, so `detail` is the
+ * server's own sentence ("Incorrect email or password.", "That email address
+ * already has an account.") and is far better than anything derivable from the
+ * status code alone. Falling back to a status-based message matters anyway: a
+ * proxy or a cold start can produce a non-JSON body.
+ */
+async function submit(path: string, body: unknown): Promise<Identity> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new AuthError("Could not reach the server. Is the backend running?");
+  }
+
+  const payload = (await response.json().catch(() => null)) as
+    | (AuthResponseBody & { detail?: string })
+    | null;
+
+  if (!response.ok) {
+    throw new AuthError(payload?.detail?.trim() || failureFor(response.status));
+  }
+
+  if (!payload?.token || !payload.user) {
+    throw new AuthError("The server returned an unexpected response.");
+  }
+
+  writeStorage(payload.token);
+  return payload.user;
+}
+
+function failureFor(status: number): string {
+  if (status === 429) return "Too many attempts. Wait a moment and try again.";
+  if (status === 503) return "The server is starting up. Try again in a moment.";
+  return `Something went wrong (${status}). Try again.`;
+}
+
+export function register(input: {
+  name: string;
+  email: string;
+  password: string;
+}): Promise<Identity> {
+  return submit("/api/auth/register", input);
+}
+
+export function login(input: { email: string; password: string }): Promise<Identity> {
+  return submit("/api/auth/login", input);
 }

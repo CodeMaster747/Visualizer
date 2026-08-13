@@ -1,30 +1,21 @@
 /**
- * The signed-in user, from whichever of the two identity sources this build has.
+ * The signed-in user.
  *
- * This store has always been the one object every account surface reads, and it
- * still is -- what changed is where the object comes from. With a Microsoft
- * Entra External ID tenant configured, it is filled from the claims in a real id
- * token and `signIn` hands off to MSAL. Without one, it is the local profile it
- * has always been: no password, no server, no user record anywhere but this
- * browser, and the sign-in screen says so.
+ * This store is the one object every account surface reads -- the sidebar, the
+ * account menu, the profile page and the route guard. It holds a projection of
+ * the access token and nothing more.
  *
- * The old comment here promised that real auth would "replace the body of
- * `signIn` and nothing else", and that turned out to be almost right. The one
- * thing it missed is persistence, which is the subtle half of this file --
- * see `hydrate` below.
+ * Nothing here is persisted, and that is the important part. The token in
+ * sessionStorage is the only thing entitled to say who is signed in; writing an
+ * account into localStorage beside it would let a stale profile outlive its
+ * token and render the whole workspace to someone holding nothing, with every
+ * API call 401ing behind a UI that looks signed in. `hydrate` rebuilds this
+ * store from the token instead, which cannot drift.
  */
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
-import {
-  identityFrom,
-  initAuth,
-  isAuthConfigured,
-  signInWithAzure,
-  signOutFromAzure,
-} from "../lib/auth";
-import { safeStorage } from "../lib/storage";
+import { clearSession, currentIdentity, login, register } from "../lib/auth";
 
 export interface Account {
   name: string;
@@ -35,11 +26,8 @@ export interface Account {
 
 interface AccountState {
   account: Account | null;
-  /**
-   * Local-profile sign-in. Only reachable when no tenant is configured; the
-   * sign-in screen renders a "Continue with Microsoft" button instead otherwise.
-   */
-  signIn: (input: { name?: string; email: string }) => void;
+  signIn: (input: { email: string; password: string }) => Promise<void>;
+  signUp: (input: { name: string; email: string; password: string }) => Promise<void>;
   signOut: () => void;
 }
 
@@ -54,8 +42,12 @@ export function initialsOf(name: string): string {
 
 /**
  * The local part of an address, punctuation turned back into spaces and
- * capitalised: the best name available when someone signs in without giving
+ * capitalised: the best name available when someone signs up without giving
  * one. "ada.lovelace@x.dev" -> "Ada Lovelace".
+ *
+ * The server derives the same name for the same reason, so this is a display
+ * fallback for a token that somehow carries no name rather than the only thing
+ * standing between an account and a blank corner of the screen.
  */
 export function nameFromEmail(email: string): string {
   const local = email.split("@")[0] ?? "";
@@ -64,72 +56,61 @@ export function nameFromEmail(email: string): string {
   return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-export const useAccount = create<AccountState>()(
-  persist(
-    (set) => ({
-      account: null,
+/** One shape for both entry points, so the store never holds a half-built account. */
+function toAccount(identity: { name: string; email: string }): Account {
+  const display = identity.name.trim() || nameFromEmail(identity.email);
+  return { name: display, email: identity.email, initials: initialsOf(display) };
+}
 
-      signIn: ({ name, email }) => {
-        const address = email.trim();
-        const display = name?.trim() || nameFromEmail(address);
-        set({
-          account: { name: display, email: address, initials: initialsOf(display) },
-        });
-      },
+export const useAccount = create<AccountState>((set) => ({
+  account: null,
 
-      // Preferences and recent runs survive on purpose: they belong to the
-      // browser, not the profile, and silently wiping someone's settings is a
-      // surprising thing for a sign-out button to do.
-      signOut: () => {
-        set({ account: null });
-        // Clearing locally is not signing out of the identity provider: leave
-        // the tenant session alive and the next sign-in silently walks straight
-        // back in, which is not what the button appeared to do.
-        if (isAuthConfigured()) void signOutFromAzure();
-      },
-    }),
-    {
-      name: "viz.account.v1",
-      storage: safeStorage,
-      // With a tenant configured the token cache is the only thing entitled to
-      // say who is signed in, so nothing is written here at all. Persisting an
-      // account alongside it would mean a stale entry could outlive its token
-      // and render the whole workspace to someone holding nothing -- every API
-      // call 401ing behind a UI that looks signed in.
-      partialize: (state) => (isAuthConfigured() ? {} : { account: state.account }),
-    },
-  ),
-);
+  // Both of these reject on failure rather than swallowing it: the sign-in
+  // screen needs the server's message ("Incorrect email or password.") to put
+  // in front of the person who typed it.
+  signIn: async ({ email, password }) => {
+    set({ account: toAccount(await login({ email, password })) });
+  },
 
-/** Start the Entra sign-in redirect, remembering where the user was headed. */
-export function beginAzureSignIn(returnTo?: string): void {
-  void signInWithAzure(returnTo);
+  signUp: async ({ name, email, password }) => {
+    set({ account: toAccount(await register({ name, email, password })) });
+  },
+
+  // Preferences and recent runs survive on purpose: they belong to the browser,
+  // not the profile, and silently wiping someone's settings is a surprising
+  // thing for a sign-out button to do.
+  signOut: () => {
+    clearSession();
+    set({ account: null });
+  },
+}));
+
+/**
+ * Resolve who is signed in, before the app renders.
+ *
+ * Synchronous, because it is a read of sessionStorage and a base64 decode --
+ * there is no provider to ask and no redirect to complete. The route guard reads
+ * `account` synchronously, so doing this after the first render would bounce an
+ * already-signed-in user to /login for a frame before yanking them back.
+ *
+ * A missing or expired token clears the store, which is what makes an expired
+ * session fail closed rather than quietly granting a workspace whose every
+ * request will be rejected.
+ */
+export function hydrate(): void {
+  const identity = currentIdentity();
+  useAccount.setState({ account: identity ? toAccount(identity) : null });
 }
 
 /**
- * Resolve who is signed in, once, before the app renders.
+ * Called when the API rejects a token mid-session -- an expiry that crossed
+ * midnight, or a server whose signing key was replaced.
  *
- * With a tenant configured this is authoritative in both directions: an account
- * from MSAL is adopted, and *no* account clears the store. That second half is
- * the point -- it is what makes a stale persisted profile from an earlier build
- * (or an expired session) fail closed rather than quietly granting access to a
- * workspace whose every request will be rejected.
- *
- * Without a tenant it does nothing, leaving the rehydrated local profile alone.
+ * Dropping the account here is what routes the user back to the sign-in screen
+ * instead of leaving them clicking Run against a workspace that will refuse
+ * every request.
  */
-export async function hydrate(): Promise<{ returnTo?: string }> {
-  if (!isAuthConfigured()) return {};
-
-  const { account, returnTo } = await initAuth();
-  if (!account) {
-    useAccount.setState({ account: null });
-    return {};
-  }
-
-  const { name, email } = identityFrom(account);
-  const display = name.trim() || nameFromEmail(email);
-  useAccount.setState({
-    account: { name: display, email, initials: initialsOf(display) },
-  });
-  return { returnTo };
+export function sessionRejected(): void {
+  clearSession();
+  useAccount.setState({ account: null });
 }

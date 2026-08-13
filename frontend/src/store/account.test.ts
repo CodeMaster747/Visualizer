@@ -1,15 +1,38 @@
 /**
- * The local-profile store, and the derivations the account surfaces rely on.
- *
- * `hydrate` is covered only in its tenant-less form here, because that is the
- * branch this build actually takes -- see lib/auth.test.ts for why.
+ * The account store, and the one invariant that matters: the store agrees with
+ * the token, always. A profile that outlives its token is a workspace rendered
+ * to someone whose every request will be refused.
  */
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { hydrate, initialsOf, nameFromEmail, useAccount } from "./account";
+import { hydrate, initialsOf, nameFromEmail, sessionRejected, useAccount } from "./account";
+
+function tokenWith(claims: Record<string, unknown>): string {
+  const payload = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(claims))))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return `header.${payload}.signature`;
+}
+
+const inAnHour = Math.floor(Date.now() / 1000) + 3600;
+const anHourAgo = Math.floor(Date.now() / 1000) - 3600;
+
+function respond(status: number, body: unknown) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: status >= 200 && status < 300,
+      status,
+      json: () => Promise.resolve(body),
+    }),
+  );
+}
 
 beforeEach(() => {
+  sessionStorage.clear();
+  vi.restoreAllMocks();
   useAccount.setState({ account: null });
 });
 
@@ -41,38 +64,98 @@ describe("nameFromEmail", () => {
   });
 });
 
-describe("local sign-in", () => {
-  it("derives a display name from the address when none is given", () => {
-    useAccount.getState().signIn({ email: "ada.lovelace@x.dev" });
+describe("signing in", () => {
+  it("adopts the identity the server returns", async () => {
+    respond(200, {
+      token: tokenWith({ sub: "u1", exp: inAnHour }),
+      user: { name: "Ada Lovelace", email: "ada@x.dev" },
+    });
+
+    await useAccount.getState().signIn({ email: "ada@x.dev", password: "hunter2!!" });
 
     expect(useAccount.getState().account).toEqual({
       name: "Ada Lovelace",
-      email: "ada.lovelace@x.dev",
+      email: "ada@x.dev",
       initials: "AL",
     });
   });
 
-  it("prefers an explicitly supplied name", () => {
-    useAccount.getState().signIn({ name: "Grace Hopper", email: "ada@x.dev" });
+  it("derives a display name when the account has none", async () => {
+    respond(200, {
+      token: tokenWith({ sub: "u1", exp: inAnHour }),
+      user: { name: "", email: "ada.lovelace@x.dev" },
+    });
 
-    expect(useAccount.getState().account?.name).toBe("Grace Hopper");
+    await useAccount.getState().signUp({ name: "", email: "ada.lovelace@x.dev", password: "hunter2!!" });
+
+    expect(useAccount.getState().account?.name).toBe("Ada Lovelace");
   });
 
-  it("signing out ends the session", () => {
-    useAccount.getState().signIn({ email: "ada@x.dev" });
+  it("rejects without signing anyone in, so the form can show why", async () => {
+    respond(401, { detail: "Incorrect email or password." });
+
+    await expect(
+      useAccount.getState().signIn({ email: "ada@x.dev", password: "nope" }),
+    ).rejects.toThrow("Incorrect email or password.");
+    expect(useAccount.getState().account).toBeNull();
+  });
+
+  it("signing out ends the session and clears the token", async () => {
+    respond(200, {
+      token: tokenWith({ sub: "u1", exp: inAnHour }),
+      user: { name: "Ada", email: "ada@x.dev" },
+    });
+    await useAccount.getState().signIn({ email: "ada@x.dev", password: "hunter2!!" });
+
     useAccount.getState().signOut();
 
+    expect(useAccount.getState().account).toBeNull();
+    expect(sessionStorage.getItem("viz.token.v1")).toBeNull();
+  });
+});
+
+describe("hydrate", () => {
+  it("restores the account from a live token", () => {
+    sessionStorage.setItem(
+      "viz.token.v1",
+      tokenWith({ sub: "u1", name: "Ada Lovelace", email: "ada@x.dev", exp: inAnHour }),
+    );
+
+    hydrate();
+
+    expect(useAccount.getState().account?.email).toBe("ada@x.dev");
+  });
+
+  it("fails closed on an expired token", () => {
+    // The case that must not render a workspace: a token from yesterday. Every
+    // API call it could make would 401.
+    sessionStorage.setItem("viz.token.v1", tokenWith({ sub: "u1", exp: anHourAgo }));
+
+    hydrate();
+
+    expect(useAccount.getState().account).toBeNull();
+  });
+
+  it("is nobody when there is no token", () => {
+    hydrate();
     expect(useAccount.getState().account).toBeNull();
   });
 });
 
-describe("hydrate without a tenant", () => {
-  it("leaves the rehydrated local profile alone", async () => {
-    // The tenant-less build must not have its persisted profile cleared by the
-    // startup hook -- that would sign everyone out on every page load.
-    useAccount.getState().signIn({ email: "ada@x.dev" });
+describe("sessionRejected", () => {
+  it("signs the user out when the API stops accepting the token", async () => {
+    respond(200, {
+      token: tokenWith({ sub: "u1", exp: inAnHour }),
+      user: { name: "Ada", email: "ada@x.dev" },
+    });
+    await useAccount.getState().signIn({ email: "ada@x.dev", password: "hunter2!!" });
 
-    await expect(hydrate()).resolves.toEqual({});
-    expect(useAccount.getState().account?.email).toBe("ada@x.dev");
+    // What lib/api.ts calls on a 401 -- the server's key was rotated, say. The
+    // route guard reads this and moves them to the sign-in screen, which is the
+    // only place re-entering a password can help.
+    sessionRejected();
+
+    expect(useAccount.getState().account).toBeNull();
+    expect(sessionStorage.getItem("viz.token.v1")).toBeNull();
   });
 });

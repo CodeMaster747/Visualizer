@@ -1,18 +1,12 @@
 /**
- * Sign in / create account, in whichever of two modes this build was configured
- * for.
+ * Sign in / create account.
  *
- * With a Microsoft Entra External ID tenant, this is a single button handing off
- * to the identity provider -- no password is typed here because none ever
- * should be typed into a page that is not the provider's own.
- *
- * Without one, it is the local-profile form it has always been, and it still
- * does not pretend to be more: no password field, no "forgot your password", no
- * spinner faking a round trip. What it does is real -- it names the local
- * profile that the workspace, the account menu and the profile page all read --
- * and the note under the form says exactly that, because the alternative is
- * someone typing their actual password into a form that stores it in
- * localStorage.
+ * A real form against a real account server: the password is hashed with BCrypt
+ * on the way in and never stored anywhere in this browser, and what comes back
+ * is an access token that every API call carries. The note under the form says
+ * what is true, because the previous version of this screen had to explain that
+ * it was a local profile with no password, and an honest note is the only thing
+ * that made that acceptable.
  *
  * Sits outside the app shell: signing in is what gets you the sidebar.
  */
@@ -23,48 +17,32 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Input, Segmented } from "../components/ui/Controls";
 import { Icon } from "../components/ui/Icon";
-import { isAuthConfigured } from "../lib/auth";
-import { beginAzureSignIn, useAccount } from "../store/account";
+import { useAccount } from "../store/account";
 
 type Mode = "signin" | "register";
 
-const COPY: Record<Mode, { title: string; subtitle: string; submit: string }> = {
+const COPY: Record<Mode, { title: string; subtitle: string; submit: string; busy: string }> = {
   signin: {
     title: "Welcome back",
-    subtitle: "Pick up where this browser left off.",
+    subtitle: "Sign in to run code and keep your traces.",
     submit: "Sign in",
+    busy: "Signing in…",
   },
   register: {
     title: "Create your account",
-    subtitle: "Name the profile your runs and preferences belong to.",
+    subtitle: "One account, and the workspace is yours.",
     submit: "Create account",
+    busy: "Creating…",
   },
 };
 
 /** Deliberately loose: rejecting valid-but-unusual addresses is the common bug. */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * The one piece of colour in a deliberately monochrome interface.
- *
- * Not an oversight and not a style exception made lightly: Microsoft's branding
- * requirements for a "Sign in with Microsoft" button specify this mark in these
- * colours, and a recoloured third-party logo is worse than a small break in the
- * palette. It lives here rather than in Icon.tsx because that set is defined as
- * one stroke weight in currentColor, and this is neither.
- */
-function MicrosoftMark() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 21 21" aria-hidden="true" className="shrink-0">
-      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-    </svg>
-  );
-}
+/** Mirrors the server's rule, so the round trip is skipped for an obvious miss. */
+const MIN_PASSWORD = 8;
 
-/** Shared by both sign-in modes: the wordmark, and a way back to the landing page. */
+/** Shared by both modes: the wordmark, and a way back to the landing page. */
 function Header() {
   return (
     <header className="mx-auto flex h-16 w-full shrink-0 max-w-[1040px] items-center px-6 sm:px-10">
@@ -82,10 +60,11 @@ function Header() {
 }
 
 function Field({
-  id, label, children,
+  id, label, hint, children,
 }: {
   id: string;
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -97,6 +76,7 @@ function Field({
         {label}
       </label>
       {children}
+      {hint && <p className="mt-1.5 text-xs text-ink-faint">{hint}</p>}
     </div>
   );
 }
@@ -106,11 +86,14 @@ export function Login() {
   const location = useLocation();
   const account = useAccount((s) => s.account);
   const signIn = useAccount((s) => s.signIn);
+  const signUp = useAccount((s) => s.signUp);
 
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   // Where the shell guard turned them away from, so a deep link survives the
   // detour through this screen.
@@ -118,58 +101,39 @@ export function Login() {
 
   if (account) return <Navigate to={from} replace />;
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (busy) return;
+
     const address = email.trim();
     if (!EMAIL.test(address)) {
       setError("Enter an email address.");
       return;
     }
-    if (mode === "register" && !name.trim()) {
-      setError("Enter a name.");
+    // Only on the way in. Checking length at sign-in would reject an older
+    // account whose password predates the rule, which is a confusing way to
+    // tell someone their own password is wrong.
+    if (mode === "register" && password.length < MIN_PASSWORD) {
+      setError(`Passwords must be at least ${MIN_PASSWORD} characters.`);
       return;
     }
-    signIn({ name: mode === "register" ? name : undefined, email: address });
-    navigate(from, { replace: true });
+
+    setBusy(true);
+    setError(null);
+    try {
+      if (mode === "register") await signUp({ name: name.trim(), email: address, password });
+      else await signIn({ email: address, password });
+      navigate(from, { replace: true });
+    } catch (failure) {
+      // The server's own sentence, which is more specific than anything this
+      // screen could infer -- "Incorrect email or password.", or that the
+      // address is already registered.
+      setError(failure instanceof Error ? failure.message : "Something went wrong. Try again.");
+      setBusy(false);
+    }
   };
 
   const copy = COPY[mode];
-
-  // With a tenant configured, the local form is not merely hidden -- it is not
-  // rendered at all, so there is no path left that can mint a profile without a
-  // token behind it.
-  if (isAuthConfigured()) {
-    return (
-      <div className="flex h-full flex-col overflow-y-auto bg-canvas">
-        <Header />
-        <main className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center px-6 py-10">
-          <h1 className="text-2xl font-semibold text-ink">Welcome</h1>
-          <p className="mt-2 text-base text-ink-dim">
-            Sign in to run code and keep your traces.
-          </p>
-
-          <Button
-            variant="primary"
-            size="md"
-            className="mt-8 w-full"
-            onClick={() => beginAzureSignIn(from)}
-          >
-            <MicrosoftMark />
-            Continue with Microsoft
-          </Button>
-
-          <p className="mt-6 flex items-start gap-2 text-sm leading-relaxed text-ink-faint">
-            <Icon name="user" size={14} className="mt-[2px] shrink-0" />
-            <span>
-              You will be taken to Microsoft to sign in. Your password is never
-              entered here, and this app only ever receives your name and email
-              address.
-            </span>
-          </p>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-canvas">
@@ -230,6 +194,23 @@ export function Login() {
             />
           </Field>
 
+          <Field
+            id="password"
+            label="Password"
+            hint={mode === "register" ? `At least ${MIN_PASSWORD} characters.` : undefined}
+          >
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              // Tells a password manager which of the two this is; without it
+              // a sign-in offers to save a new entry every time.
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              placeholder="••••••••"
+            />
+          </Field>
+
           {error && (
             <p role="alert" className="flex items-center gap-2 text-sm text-danger">
               <Icon name="diamond" size={12} className="shrink-0" />
@@ -237,18 +218,23 @@ export function Login() {
             </p>
           )}
 
-          <Button type="submit" variant="primary" size="md" className="mt-1 w-full">
-            {copy.submit}
-            <Icon name="arrowRight" size={16} />
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            className="mt-1 w-full"
+            disabled={busy}
+          >
+            {busy ? copy.busy : copy.submit}
+            {!busy && <Icon name="arrowRight" size={16} />}
           </Button>
         </form>
 
         <p className="mt-6 flex items-start gap-2 text-sm leading-relaxed text-ink-faint">
           <Icon name="user" size={14} className="mt-[2px] shrink-0" />
           <span>
-            No password — this build has no account server. Your profile,
-            preferences and recent runs are stored in this browser and nowhere
-            else.
+            Your password is hashed before it is stored and never leaves the
+            server. Closing this tab signs you out.
           </span>
         </p>
       </main>

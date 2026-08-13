@@ -7,21 +7,29 @@
  */
 
 import { getAccessToken } from "./auth";
+import { sessionRejected } from "../store/account";
 import type { TraceDocument } from "../types/trace";
 
 /**
- * `fetch` with a bearer token attached when there is one to attach.
+ * `fetch` with the access token attached, and a single place that notices when
+ * the server stops accepting it.
  *
- * `getAccessToken` returns null whenever Azure is not configured, so on a
- * tenant-less build this is exactly the plain fetch it replaced -- which is why
- * every caller can use it unconditionally instead of branching on whether this
- * deployment has authentication.
+ * Every authenticated endpoint goes through here, so a 401 anywhere signs the
+ * user out exactly once and the route guard takes them to the sign-in screen.
+ * Without that, an expired token leaves a workspace that looks signed in and
+ * refuses every request -- and re-entering a password would be the one thing
+ * that could not fix it, because nothing was listening for the answer.
  */
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
-  const token = await getAccessToken();
+  const token = getAccessToken();
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  return fetch(url, { ...init, headers });
+
+  const response = await fetch(url, { ...init, headers });
+  if (response.status === 401 || response.status === 403) {
+    sessionRejected();
+  }
+  return response;
 }
 
 export interface SampleFile {
@@ -111,9 +119,11 @@ function parseTrace(body: unknown): TraceDocument {
 
 function describeFailure(status: number): string {
   if (status === 429) return "Too many runs — give it a moment and try again.";
-  // Only reachable on a build with a tenant configured, where it means the
-  // session lapsed rather than anything being broken.
+  // `call` has already cleared the session by the time this runs, so the route
+  // guard is about to move the user to the sign-in screen and the advice is
+  // something they can actually act on.
   if (status === 401 || status === 403) return "Your session expired. Sign in again to run code.";
+  if (status === 503) return "The execution service is starting up. Try again in a moment.";
   return `Server error (${status}). Try again.`;
 }
 

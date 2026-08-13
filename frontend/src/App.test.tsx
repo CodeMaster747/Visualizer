@@ -33,9 +33,40 @@ function renderAt(path: string) {
   );
 }
 
-/** The state the workspace tests all assume: somebody is signed in. */
+/**
+ * The state the workspace tests all assume: somebody is signed in.
+ *
+ * Set directly rather than driven through the form, because signing in is now a
+ * network round trip and these tests are about the shell, not about auth.
+ */
 function signIn() {
-  useAccount.getState().signIn({ name: "Ada Lovelace", email: "ada@example.com" });
+  useAccount.setState({
+    account: { name: "Ada Lovelace", email: "ada@example.com", initials: "AL" },
+  });
+}
+
+/**
+ * Stub the API's answer to a sign-in or registration.
+ *
+ * The token has to be one the app will accept -- it decodes the payload and
+ * checks the expiry before storing anything -- so it is built the same way the
+ * server builds it, minus a signature nothing in the browser verifies.
+ */
+function respondWithSession(user: { name: string; email: string }) {
+  const claims = { sub: "u1", exp: Math.floor(Date.now() / 1000) + 3600, ...user };
+  const payload = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(claims))))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ token: `header.${payload}.sig`, user }),
+    }),
+  );
 }
 
 /** The sign-in form, scoped: the mode switch above it repeats both labels. */
@@ -49,6 +80,8 @@ beforeEach(() => {
   // jsdom here has no localStorage; zustand's persist middleware degrades to
   // in-memory, which is exactly what these assertions want anyway.
   globalThis.localStorage?.clear();
+  sessionStorage.clear();
+  vi.unstubAllGlobals();
   usePrefs.setState({ sidebarCollapsed: false, defaultLanguage: "python" });
   useRecents.setState({ runs: [] });
   useAccount.setState({ account: null });
@@ -113,41 +146,88 @@ describe("landing page", () => {
 });
 
 describe("sign in", () => {
-  it("creates a local account and opens the workspace", () => {
+  it("signs in and opens the workspace", async () => {
+    // The account has no display name, so the one shown must be derived from
+    // the address rather than left blank.
+    respondWithSession({ name: "", email: "ada@example.com" });
     renderAt("/login");
 
     fill("Email", "ada@example.com");
+    fill("Password", "hunter2!!");
     fireEvent.click(form().getByRole("button", { name: "Sign in" }));
 
-    // Landed in the shell, with the profile the form named.
-    expect(screen.getByRole("navigation")).toBeDefined();
+    // Landed in the shell, with the profile the server returned.
+    expect(await screen.findByRole("navigation")).toBeDefined();
     expect(useAccount.getState().account?.email).toBe("ada@example.com");
-    // No name was given, so it came from the address.
     expect(useAccount.getState().account?.name).toBe("Ada");
   });
 
-  it("takes a name when registering", () => {
+  it("takes a name when registering", async () => {
+    respondWithSession({ name: "Grace Hopper", email: "grace@example.com" });
     renderAt("/login");
 
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     fill("Name", "Grace Hopper");
     fill("Email", "grace@example.com");
+    fill("Password", "hunter2!!");
     fireEvent.click(form().getByRole("button", { name: "Create account" }));
 
+    expect(await screen.findByRole("navigation")).toBeDefined();
     expect(useAccount.getState().account).toMatchObject({
       name: "Grace Hopper",
       initials: "GH",
     });
   });
 
-  it("refuses a junk address without signing anyone in", () => {
+  it("refuses a junk address without asking the server", () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
     renderAt("/login");
 
     fill("Email", "not-an-address");
+    fill("Password", "hunter2!!");
     fireEvent.click(form().getByRole("button", { name: "Sign in" }));
 
     expect(screen.getByRole("alert")).toBeDefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
     expect(useAccount.getState().account).toBeNull();
+  });
+
+  it("shows the server's reason and stays put when credentials are wrong", async () => {
+    // The failure the user actually hits. It has to land on this screen with a
+    // message, not bounce them into a workspace they cannot use.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ detail: "Incorrect email or password." }),
+      }),
+    );
+    renderAt("/login");
+
+    fill("Email", "ada@example.com");
+    fill("Password", "wrong-password");
+    fireEvent.click(form().getByRole("button", { name: "Sign in" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Incorrect email or password.");
+    expect(useAccount.getState().account).toBeNull();
+    expect(screen.queryByRole("navigation")).toBeNull();
+  });
+
+  it("rejects a too-short password before the server has to", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    renderAt("/login");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    fill("Name", "Ada");
+    fill("Email", "ada@example.com");
+    fill("Password", "short");
+    fireEvent.click(form().getByRole("button", { name: "Create account" }));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/at least 8 characters/);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -213,13 +293,15 @@ describe("the workspace gate", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeDefined();
   });
 
-  it("returns them to the page they asked for once signed in", () => {
+  it("returns them to the page they asked for once signed in", async () => {
+    respondWithSession({ name: "Ada Lovelace", email: "ada@example.com" });
     renderAt("/app/settings");
 
     fill("Email", "ada@example.com");
+    fill("Password", "hunter2!!");
     fireEvent.click(form().getByRole("button", { name: "Sign in" }));
 
     // Settings, not the workspace home page.
-    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeDefined();
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeDefined();
   });
 });
